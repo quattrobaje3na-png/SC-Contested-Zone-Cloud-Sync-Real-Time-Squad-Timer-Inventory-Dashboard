@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Force-Sync v9.8</title>
+    <title>SC Contested Zone: Force-Sync v9.9</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -47,7 +47,10 @@
             background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
             padding: 12px; cursor: pointer; text-transform: uppercase; font-size: 11px; width: 100%; font-weight: 900;
         }
-        .btn-terminal:active { background: rgba(255,140,0,0.2); }
+        .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
+        .btn-turnin { border-color: var(--success-green); color: var(--success-green); margin-top: 10px; }
+        .btn-turnin:hover { background: rgba(0, 255, 0, 0.1); }
+
         .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 50px; font-family: monospace; }
 
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 12px; }
@@ -84,6 +87,7 @@
                 <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
                 <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
+                <button class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_GEAR ]</button>
             </div>
 
             <div class="lz-group">
@@ -157,17 +161,17 @@
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
     let isSyncing = false;
-    let pushLock = false; // Flag to prevent Pull from overwriting a fresh local change
+    let pushLock = false; 
 
     document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
 
     function syncWithCloud() {
-        if(isSyncing || pushLock) return; // Ignore pull if we just pushed a change
+        if(isSyncing || pushLock) return;
         const code = document.getElementById('squad-code').value; if(!code) return;
         isSyncing = true;
         const cb = 'cb_' + Math.round(Date.now());
         window[cb] = (d) => {
-            if(pushLock) { isSyncing = false; return; } // Secondary check
+            if(pushLock) { isSyncing = false; return; }
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
             inventory = d.inventory || []; 
             renderInventory(); 
@@ -183,29 +187,22 @@
 
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
-        
-        pushLock = true; // Lock incoming syncs
+        pushLock = true; 
         const body = { groupCode: code, inventory: inventory };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
-        
-        const f = document.createElement('form'); 
-        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
-        
-        if(!document.getElementById('h_ifr')) { 
-            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); 
-        }
-        
-        document.body.appendChild(f); 
-        f.submit(); 
+        if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
+        document.body.appendChild(f); f.submit(); 
         renderInventory(); 
-        
-        // Hold the lock for 3 seconds to allow cloud processing
-        setTimeout(() => { 
-            f.remove(); 
-            pushLock = false; 
-        }, 3000);
+        setTimeout(() => { f.remove(); pushLock = false; }, 3000);
+    }
+
+    function turnInAll() {
+        if(!confirm("CONFIRM TURN-IN: This will clear all items from the manifest.")) return;
+        inventory = [];
+        pushState();
     }
 
     function collectItem(id, name, sec) {
@@ -223,18 +220,12 @@
     function moveItem(uid) {
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
-        if(valid.includes(target)) { 
-            const item = inventory.find(i => i.uid === uid); 
-            if(item) { item.loc = target; pushState(); } 
-        }
+        if(valid.includes(target)) { const item = inventory.find(i => i.uid === uid); if(item) { item.loc = target; pushState(); } }
     }
 
     function adjustTimer(id) {
         let m = prompt("Minutes remaining:");
-        if(m && !isNaN(m)) { 
-            localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); 
-            pushState(); 
-        }
+        if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
     }
 
     function renderInventory() {
@@ -243,9 +234,7 @@
             const items = inventory.filter(i => i.loc === loc);
             container.innerHTML = `<span class="loc-title">${loc === 'Personal' ? 'OPERATOR_INV' : loc.toUpperCase()}</span>`;
             items.forEach(item => {
-                const div = document.createElement('div'); 
-                div.className = 'inv-item'; 
-                div.style.borderLeftColor = getLocColor(loc);
+                const div = document.createElement('div'); div.className = 'inv-item'; div.style.borderLeftColor = getLocColor(loc);
                 div.innerHTML = `<div>${item.name}<br><small style="color:#555">BY: ${item.owner}</small></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:var(--error-red)" onclick="dropItem(${item.uid})">X</button></div>`;
                 container.appendChild(div);
             });
@@ -255,21 +244,8 @@
         document.getElementById('mission-banner').style.display = required.every(r => currentNames.includes(r)) ? 'block' : 'none';
     }
 
-    function getLocColor(loc) { 
-        if(loc === 'Checkmate') return '#FF8C00'; 
-        if(loc === 'Orbit') return '#0088ff'; 
-        if(loc === 'Personal') return '#00FF00'; 
-        return '#444'; 
-    }
-
-    function clearAllData() { 
-        if(confirm("WIPE SQUAD DATA?")) { 
-            inventory = []; 
-            localStorage.clear(); 
-            pushState(); 
-            location.reload(); 
-        } 
-    }
+    function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
+    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
 
     function updateTimers() {
         const nowMs = Date.now();
@@ -295,10 +271,7 @@
                     const rem = Math.ceil((exp - nowMs) / 1000);
                     el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
                     el.style.color = 'var(--error-red)';
-                } else { 
-                    el.textContent = "READY"; 
-                    el.style.color = 'var(--success-green)'; 
-                }
+                } else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
             }
         });
     }
