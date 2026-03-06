@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v9.2</title>
+    <title>Squad Ops Terminal v9.3</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -66,7 +66,7 @@
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 11px; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 3px 6px; cursor: pointer; }
         
-        .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; }
+        .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; border-style: double; }
         .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; margin-right: 10px; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
         .lamp-err { background: var(--error-red); box-shadow: 0 0 10px var(--error-red); }
@@ -80,14 +80,14 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v9.2_INJECTION_STABLE ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v9.3_REDUNDANT ]</span>
     </div>
 
     <div class="briefing-panel">
-        <b>[ OPERATIONAL_BRIEFING: v9.2 ]</b><br>
-        1. <b>CONNECTION:</b> Using Script Injection to bypass security walls on different networks.<br>
-        2. <b>AUTO-SYNC:</b> Typing a 4+ character <b>SQUAD_CODE</b> triggers an immediate cloud pull.<br>
-        3. <b>SYNC INTERVAL:</b> Dashboard updates automatically every 20 seconds.
+        <b>[ OPERATIONAL_BRIEFING: v9.3 ]</b><br>
+        1. <b>RED-LIGHT FIX:</b> If the light turns red, Chrome is blocking the link. Try disabling Ad-Blockers.<br>
+        2. <b>DUAL-PATH:</b> Terminal now attempts two different connection methods to ensure Home/Work sync.<br>
+        3. <b>SQUAD_CODE:</b> Ensure everyone uses the <b>exact same code</b> to share the cloud sheet.
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
@@ -152,14 +152,13 @@
 
 <script>
     const CONFIG = {
-        URL: 'https://script.google.com/macros/s/AKfycbyBSHzDAa1tipoej3JPiWKFOVqZjfi05esA9Jnc2R6KWasgCbTEOSIkfuKOPUVnx7wXgQ/exec',
+        URL: 'https://script.google.com/macros/s/AKfycbx_wBHnaggUHWVEOEWhG4jmUX0yJd5kEK15tJqmg7nUvkDxy3dCCrDIZohEIz3wkJUHdg/exec',
         H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775, V_CYC: 1200000, V_OPEN: 60000
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
     let isSyncing = false;
 
-    // AUTO-FETCH
     document.getElementById('squad-code').addEventListener('input', function(e) {
         if (e.target.value.length >= 4) syncWithCloud();
     });
@@ -169,43 +168,70 @@
         log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + log.innerHTML;
     }
 
-    // --- SCRIPT INJECTION PULL (v9.2) ---
-    function syncWithCloud() {
+    // --- REDUNDANT SYNC SYSTEM (v9.3) ---
+    async function syncWithCloud() {
         if(isSyncing) return;
         const code = document.getElementById('squad-code').value;
         if(!code) return;
         
         isSyncing = true;
-        document.getElementById('sync-status').textContent = "[ INJECTING... ]";
+        document.getElementById('sync-status').textContent = "[ SYNC_PATH_1... ]";
+        
         const cbName = 'callback_' + Math.round(Date.now());
         
-        window[cbName] = function(d) {
-            if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
-            if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
-            IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
-            
-            inventory = d.inventory || [];
-            renderInventory(); 
-
-            document.getElementById('indicator').className = 'conn-lamp lamp-ok';
-            document.getElementById('sync-status').textContent = "[ SYNC_OK ]";
-            isSyncing = false;
-            delete window[cbName];
-            document.getElementById(cbName).remove();
-        };
-
+        // PATH A: JSONP Script Injection
         const script = document.createElement('script');
         script.id = cbName;
-        script.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cbName}&t=${Date.now()}`;
-        script.onerror = () => {
-            isSyncing = false;
-            document.getElementById('indicator').className = 'conn-lamp lamp-err';
-            document.getElementById('sync-status').textContent = "[ LINK_ERR ]";
+        
+        window[cbName] = function(d) {
+            processSyncData(d);
+            cleanupSync(cbName);
         };
+
+        script.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cbName}&t=${Date.now()}`;
+        
+        script.onerror = async () => {
+            // PATH B: Standard Fetch Failover
+            document.getElementById('sync-status').textContent = "[ SYNC_PATH_2... ]";
+            cleanupSync(cbName);
+            
+            try {
+                const response = await fetch(`${CONFIG.URL}?groupCode=${code}&t=${Date.now()}`, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+                const d = await response.json();
+                processSyncData(d);
+            } catch (err) {
+                document.getElementById('indicator').className = 'conn-lamp lamp-err';
+                document.getElementById('sync-status').textContent = "[ SYNC_BLOCKED ]";
+                isSyncing = false;
+            }
+        };
+
         document.body.appendChild(script);
     }
 
-    // --- FORM PUSH ---
+    function processSyncData(d) {
+        if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
+        if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
+        IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
+        
+        inventory = d.inventory || [];
+        renderInventory(); 
+
+        document.getElementById('indicator').className = 'conn-lamp lamp-ok';
+        document.getElementById('sync-status').textContent = "[ SYNC_OK ]";
+        isSyncing = false;
+    }
+
+    function cleanupSync(id) {
+        const el = document.getElementById(id);
+        if(el) el.remove();
+        delete window[id];
+    }
+
+    // --- DATA PUSH (Unchanged stable method) ---
     function pushState() {
         const code = document.getElementById('squad-code').value;
         if(!code) return;
