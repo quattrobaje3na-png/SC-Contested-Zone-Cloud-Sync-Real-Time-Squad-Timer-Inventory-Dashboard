@@ -1,67 +1,73 @@
-<style>
-    :root {
-        --terminal-orange: #FF8C00;
-        --terminal-bg: rgba(5,5,5,0.98);
-        --terminal-border: #333;
-        --success-green: #00FF00;
-        --error-red: #ef4444;
-        --intel-blue: #0088ff;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategic Ops Terminal v8.0</title>
+    <style>
+        :root {
+            --terminal-orange: #FF8C00;
+            --terminal-bg: rgba(5,5,5,0.98);
+            --terminal-border: #333;
+            --success-green: #00FF00;
+            --error-red: #ef4444;
+            --intel-blue: #0088ff;
+        }
 
-    #ops-terminal-wrapper { 
-        background: #000; color: #fff; font-family: 'Courier New', monospace; 
-        padding: 25px; border: 1px solid #222; margin-top: 20px;
-    }
+        body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
+        .training-dashboard { display: flex; flex-direction: column; min-height: 100vh; padding: 20px; }
 
-    .sync-header {
-        border-bottom: 2px solid var(--terminal-orange);
-        padding-bottom: 15px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 15px; align-items: center;
-    }
+        .sync-header {
+            background: #050505; border-bottom: 2px solid var(--terminal-orange);
+            padding: 15px 30px; display: flex; flex-wrap: wrap; gap: 15px;
+            align-items: center; position: sticky; top: 0; z-index: 100; margin-bottom: 20px;
+        }
 
-    .header-input {
-        background: #000; border: 1px solid #444; color: var(--terminal-orange);
-        padding: 8px; font-size: 12px; outline: none; width: 140px;
-    }
+        .header-input {
+            background: #000; border: 1px solid #444; color: var(--terminal-orange);
+            padding: 8px; font-family: monospace; font-size: 12px; outline: none;
+        }
 
-    .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 30px; }
-    .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-    
-    .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 15px; position: relative; }
-    .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 25px; text-align: center; margin-bottom: 30px; }
-    
-    .op-label { color: var(--terminal-orange); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: block; }
-    .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; line-height: 1; }
-    
-    .btn-terminal { 
-        background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
-        padding: 8px; cursor: pointer; text-transform: uppercase; font-size: 10px; width: 100%; transition: 0.2s;
-    }
-    .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
+        .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
+        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        
+        .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 15px; position: relative; }
+        .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 25px; text-align: center; margin-bottom: 30px; }
+        
+        .op-label { color: var(--terminal-orange); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: block; }
+        .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
+        
+        .btn-terminal { 
+            background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
+            padding: 8px; cursor: pointer; text-transform: uppercase; font-size: 10px; width: 100%; transition: 0.2s;
+        }
+        .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
 
-    .inventory-manifest { background: #0a0a0a; border: 1px solid #222; padding: 15px; height: fit-content; }
-    .inv-loc-group { border-bottom: 1px solid #222; margin-bottom: 15px; padding-bottom: 10px; }
-    .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; background: rgba(255,255,255,0.03); margin-top: 4px; font-size: 10px; border-left: 2px solid var(--terminal-orange); }
-    
-    .status-log { background: #050505; border: 1px solid #222; height: 160px; overflow-y: auto; font-size: 10px; color: #666; padding: 8px; margin-top: 20px; border-style: double; }
-    .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; }
-    .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
+        .inventory-manifest { background: #0a0a0a; border: 1px solid #222; padding: 15px; min-height: 200px; }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; background: rgba(255,255,255,0.03); margin-top: 4px; font-size: 10px; border-left: 2px solid var(--terminal-orange); }
+        
+        .status-log { background: #050505; border: 1px solid #222; height: 160px; overflow-y: auto; font-size: 10px; color: #555; padding: 8px; margin-top: 20px; }
+        .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; }
+        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
 
-    .btn-adj { width: 45px; background: #111; border: 1px solid #444; color: #666; font-size: 9px; cursor: pointer; }
-</style>
+        .btn-adj { width: 45px; background: #111; border: 1px solid #444; color: #666; font-size: 9px; cursor: pointer; }
+    </style>
+</head>
+<body>
 
-<div id="ops-terminal-wrapper">
+<div class="training-dashboard">
     <div class="sync-header">
         <div id="indicator" class="conn-lamp"></div>
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OPERATOR_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v7.5_LIVE ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.0_GH_STABLE ]</span>
     </div>
 
     <div class="main-grid">
         <div class="ops-column">
             <div class="exec-hero">
-                <span class="op-label">PRIMARY_OBJECTIVE: EXECUTIVE_HANGAR</span>
+                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:72px; font-weight:900;">00:00</div>
                 <button class="btn-terminal" style="width:200px" onclick="manualSync('h')">[ CALIBRATE_CYCLE ]</button>
             </div>
@@ -90,7 +96,7 @@
                 </div>
             </div>
 
-            <span class="op-label" style="margin-top:30px;">02. LZ_BOARDS (20M COOLDOWN)</span>
+            <span class="op-label" style="margin-top:30px;">02. COMPBOARD REGISTRY (20M COOLDOWN)</span>
             <div class="op-grid">
                 <div class="data-card">
                     <span style="font-size:10px;">B_01 [RED]</span>
@@ -132,11 +138,11 @@
 
         <div class="side-column">
             <div class="inventory-manifest">
-                <span class="op-label">SQUAD_STORAGE</span>
-                <div id="inv-Personal" class="inv-loc-group"><span style="font-size:9px; color:#444;">[ OPERATOR_INV ]</span></div>
-                <div id="inv-Checkmate" class="inv-loc-group"><span style="font-size:9px; color:#444;">[ CHECKMATE ]</span></div>
-                <div id="inv-Orbit" class="inv-loc-group"><span style="font-size:9px; color:#444;">[ ORBITUARY ]</span></div>
-                <div id="inv-Ruin" class="inv-loc-group"><span style="font-size:9px; color:#444;">[ RUIN_STATION ]</span></div>
+                <span class="op-label">SQUAD_INVENTORY</span>
+                <div id="inv-Checkmate" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ CHECKMATE ]</span></div>
+                <div id="inv-Orbit" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ ORBITUARY ]</span></div>
+                <div id="inv-Ruin" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ RUIN_STATION ]</span></div>
+                <div id="inv-Personal" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ OPERATOR_INV ]</span></div>
             </div>
             <div id="terminal-log" class="status-log"></div>
             <button class="btn-terminal" style="margin-top:10px; border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
@@ -154,18 +160,14 @@
     let inventory = [];
     let isSyncing = false;
 
-    function addLog(msg) {
-        const log = document.getElementById('terminal-log');
-        log.innerHTML = `<div>[${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}] ${msg}</div>` + log.innerHTML;
-    }
-
+    // --- JSONP SYNC ---
     function syncWithCloud() {
         if(isSyncing) return;
         const code = document.getElementById('squad-code').value;
         if(!code) return;
         isSyncing = true;
-        const cb = 'cb_' + Math.round(Date.now());
-        window[cb] = function(d) {
+        const callback = 'cb_' + Math.round(Date.now());
+        window[callback] = function(d) {
             if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
             if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
@@ -174,14 +176,17 @@
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
             isSyncing = false;
-            delete window[cb]; document.getElementById('scr_'+cb).remove();
+            delete window[callback];
+            const s = document.getElementById('scr_'+callback);
+            if(s) s.remove();
         };
         const s = document.createElement('script');
-        s.id = 'scr_'+cb;
-        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
+        s.id = 'scr_'+callback;
+        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${callback}`;
         document.body.appendChild(s);
     }
 
+    // --- FORM PUSH ---
     function pushState() {
         const code = document.getElementById('squad-code').value;
         if(!code) return;
@@ -190,15 +195,19 @@
             vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory 
         };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
+
         const f = document.createElement('form');
-        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_iframe';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
-        if(!document.getElementById('h_ifr')) {
-            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none';
+        
+        if(!document.getElementById('h_iframe')) {
+            const ifr = document.createElement('iframe'); ifr.name = 'h_iframe'; ifr.id = 'h_iframe'; ifr.style.display = 'none';
             document.body.appendChild(ifr);
         }
-        document.body.appendChild(f); f.submit();
+        
+        document.body.appendChild(f);
+        f.submit();
         setTimeout(() => f.remove(), 1000);
         renderInventory();
     }
@@ -207,7 +216,9 @@
         const user = document.getElementById('username').value || "Op";
         localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
         inventory.push({ uid: Date.now() + Math.random(), id, name, loc: 'Personal', owner: user });
-        addLog(`COLLECTED: ${name}`); pushState();
+        const log = document.getElementById('terminal-log');
+        log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] COLLECTED: ${name}</div>` + log.innerHTML;
+        pushState();
     }
 
     function moveItem(uid) {
@@ -215,15 +226,20 @@
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
         if(valid.includes(target)) {
             const item = inventory.find(i => i.uid === uid);
-            if(item) { item.loc = target; addLog(`MOVED: ${item.name} -> ${target}`); pushState(); }
+            if(item) { item.loc = target; pushState(); }
         }
+    }
+
+    function dropItem(uid) {
+        inventory = inventory.filter(i => i.uid !== uid);
+        pushState();
     }
 
     function renderInventory() {
         ['Personal', 'Checkmate', 'Orbit', 'Ruin'].forEach(loc => {
             const container = document.getElementById(`inv-${loc}`);
             const items = inventory.filter(i => i.loc === loc);
-            container.innerHTML = `<span style="font-size:9px; color:#444;">[ ${loc === 'Personal' ? 'OPERATOR_INV' : loc.toUpperCase()} ]</span>`;
+            container.innerHTML = `<span style="font-size:9px; color:#444;">[ ${loc.toUpperCase()} ]</span>`;
             items.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'inv-item';
@@ -233,24 +249,15 @@
         });
     }
 
-    function dropItem(uid) {
-        inventory = inventory.filter(i => i.uid !== uid);
-        pushState();
-    }
-
     function adjustTimer(id) {
         let m = prompt("Minutes remaining:");
-        if(m) { 
-            localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); 
-            addLog(`ADJUST: ${id.toUpperCase()} -> ${m}M`);
-            pushState(); 
-        }
+        if(m) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
     }
 
     function manualSync(t) {
         if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC));
         else localStorage.setItem('cz-v-sync', Date.now());
-        addLog(`SYNC: ${t==='h' ? 'HANGAR' : 'VAULT'}`); pushState();
+        pushState();
     }
 
     function clearAllData() {
@@ -297,3 +304,5 @@
     setInterval(updateTimers, 1000);
     setInterval(syncWithCloud, 30000);
 </script>
+</body>
+</html>
