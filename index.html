@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Squad Dashboard</title>
+    <title>SC Contested Zone: Squad Timer & Inventory Sync</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -14,212 +14,262 @@
             --intel-blue: #0088ff;
         }
 
-        body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; -webkit-font-smoothing: antialiased; }
+        body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
         .dashboard-container { padding: 10px; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
 
-        /* --- SYNC HEADER --- */
+        /* --- STICKY SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 12px; display: flex; flex-wrap: wrap; gap: 8px;
             align-items: center; position: sticky; top: 0; z-index: 100; margin-bottom: 15px;
         }
-        .header-input { 
-            background: #000; border: 1px solid #444; color: var(--terminal-orange); 
-            padding: 10px; font-size: 14px; outline: none; flex: 1 1 120px; 
-        }
-        .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; transition: 0.2s; }
-        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
-        .lamp-syncing { background: var(--terminal-orange); box-shadow: 0 0 10px var(--terminal-orange); }
+        .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 14px; outline: none; flex: 1; min-width: 100px; }
 
-        /* --- MISSION UI --- */
+        /* --- MISSION STATUS BANNER --- */
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
-            padding: 12px; margin-bottom: 20px; text-align: center; font-weight: bold;
-            color: var(--success-green); font-size: 12px;
+            padding: 12px; margin-bottom: 15px; text-align: center; font-weight: bold;
+            color: var(--success-green); animation: pulse-green 2s infinite; letter-spacing: 1px; font-size: 14px;
         }
+        @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 15px var(--success-green); } }
 
-        /* --- GRID LAYOUT --- */
-        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
-        @media (max-width: 1000px) { .main-grid { grid-template-columns: 1fr; } }
+        /* --- LAYOUT --- */
+        .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 1024px) { .main-grid { grid-template-columns: 1fr 380px; } }
 
         .lz-group { margin-bottom: 25px; }
-        .lz-header { background: #111; padding: 10px; font-size: 11px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
-        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+        .lz-header { background: #111; padding: 8px 12px; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; border-left: 5px solid #444; margin-bottom: 10px; text-transform: uppercase; }
+        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
-        /* --- HERO HANGAR --- */
-        .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 20px; text-align: center; margin-bottom: 25px; }
-        #h-timer { font-size: 60px; font-weight: 900; line-height: 1; margin: 10px 0; }
-        .op-label { color: var(--terminal-orange); font-size: 10px; text-transform: uppercase; margin-bottom: 5px; display: block; font-weight: bold; }
-        #h-mini { font-size: 1.2em; color: lightgray; display: block; margin-top: 5px; }
-
-        /* --- CARDS & BUTTONS --- */
-        .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 12px; }
-        .timer-val { font-size: 24px; font-weight: bold; margin: 5px 0; }
+        /* --- CARDS --- */
+        .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
+        .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 20px; text-align: center; margin-bottom: 20px; }
+        .timer-val { font-size: 28px; font-weight: bold; margin: 4px 0; font-variant-numeric: tabular-nums; }
+        .op-label { color: var(--terminal-orange); font-size: 10px; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        
         .btn-terminal { 
             background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
-            padding: 10px; cursor: pointer; text-transform: uppercase; font-size: 11px; width: 100%; font-weight: 900;
+            padding: 12px; cursor: pointer; text-transform: uppercase; font-size: 11px; width: 100%; font-weight: 900;
+            touch-action: manipulation;
         }
-        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 8px; cursor: pointer; font-size: 10px; width: 45px; }
+        .btn-terminal:active { background: rgba(255,140,0,0.2); }
 
-        /* --- INVENTORY --- */
-        .side-block { background: #0a0a0a; border: 2px solid #222; padding: 15px; margin-bottom: 15px; }
-        .loc-title { font-size: 10px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 8px; text-transform: uppercase; }
-        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; font-size: 12px; }
-        .owner-tag { color: var(--intel-blue); font-size: 9px; }
+        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 50px; font-family: monospace; }
+
+        /* --- INVENTORY MENU --- */
+        .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 12px; }
+        .inv-loc-group { margin-bottom: 15px; border: 1px solid #1a1a1a; padding: 8px; background: rgba(255,255,255,0.02); }
+        .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 6px; }
+        
+        #inv-Checkmate .loc-title { color: #FF8C00; }
+        #inv-Orbit     .loc-title { color: #0088ff; }
+        #inv-Ruin      .loc-title { color: #ffffff; }
+        #inv-Personal  .loc-title { color: #00FF00; }
+
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
+        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 6px; cursor: pointer; }
+        
+        .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; flex-shrink: 0; }
+        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
     </style>
 </head>
 <body>
 
 <div class="dashboard-container">
     <div class="sync-header">
-        <div id="sync-lamp" class="conn-lamp"></div>
+        <div id="indicator" class="conn-lamp"></div>
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
-        <button class="btn-terminal" style="flex: 1 1 100px;" onclick="syncWithCloud()">[ FETCH ]</button>
+        <button class="btn-terminal" style="width:auto; padding: 0 15px;" onclick="syncWithCloud()">[ SYNC ]</button>
     </div>
 
-    <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL KEYS SECURED ]</div>
+    <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
 
     <div class="main-grid">
         <div class="ops-column">
             <div class="exec-hero">
-                <span id="h-label" class="op-label">PRIMARY: HANGAR_STATUS</span>
-                <div id="h-timer">00:00:00</div>
-                <span id="h-mini">SYNCING DATA...</span>
+                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
+                <div id="h-timer" style="font-size:64px; font-weight:900;">00:00</div>
+                <button class="btn-terminal" style="width:180px; margin-top:10px;" onclick="manualSync('h')">[ CALIBRATE ]</button>
             </div>
 
             <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--success-green)">ACCESS_KEYCARDS</div>
+                <div class="lz-header" style="border-color: var(--success-green)">ACCESS: SUPERVISOR_KEYS</div>
                 <div class="op-grid">
-                    <div class="data-card"><span class="op-label">KEY_3-4</span><div id="c1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('c1','KEY_3-4',1800, 'Checkmate')">START</button><button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">KEY_3-5</span><div id="c2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('c2','KEY_3-5',1800, 'Orbit')">START</button><button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button></div></div>
+                    <div class="data-card">
+                        <span class="op-label">SUP-3-4</span>
+                        <div id="c1-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button>
+                            <button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">SUP-3-5</span>
+                        <div id="c2-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button>
+                            <button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_01 [RED]</span><div id="b1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_02 [BLUE]</span><div id="b2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div></div>
+                </div>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_07 [R+B2]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
+                </div>
+            </div>
+
+            <div class="lz-group">
+                <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
+                <div class="op-grid">
+                    <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
+                    <div class="data-card" id="vault-card"><span class="op-label">VAULT_DOOR</span><div id="v-timer" class="timer-val">--:--</div><button class="btn-terminal" onclick="manualSync('v')">[ SYNC_OPEN ]</button></div>
                 </div>
             </div>
         </div>
 
         <div class="side-column">
-            <div class="side-block">
-                <span class="op-label">SQUAD_INVENTORY</span>
-                <div id="inv-Checkmate"><span class="loc-title" style="color:var(--terminal-orange)">CHECKMATE</span></div>
-                <div id="inv-Orbit"><span class="loc-title" style="color:var(--intel-blue)">ORBITUARY</span></div>
-                <div id="inv-Ruin"><span class="loc-title" style="color:#fff">RUIN_STATION</span></div>
-                <div id="inv-Personal"><span class="loc-title" style="color:var(--success-green)">IN_TRANSIT</span></div>
+            <div class="inventory-manifest">
+                <span class="op-label">SQUAD_STORAGE</span>
+                <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
+                <div id="inv-Orbit" class="inv-loc-group"><span class="loc-title">ORBITUARY</span></div>
+                <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
+                <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">OPERATOR_INV</span></div>
             </div>
-            <button class="btn-terminal" style="border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ WIPE_LOCAL ]</button>
+            <button class="btn-terminal" style="margin-top:15px; border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
         </div>
     </div>
 </div>
 
 <script>
     const CONFIG = {
-        URL: 'https://script.google.com/macros/s/AKfycbyBSHzDAa1tipoej3JPiWKFOVqZjfi05esA9Jnc2R6KWasgCbTEOSIkfuKOPUVnx7wXgQ/exec',
-        RED_PHASE: 2 * 60 * 60,   // 2 hours
-        GREEN_PHASE: 1 * 60 * 60, // 1 hour
-        BLACK_PHASE: 5 * 60,      // 5 minutes
-        TOTAL_CYCLE: (2 * 60 * 60) + (1 * 60 * 60) + (5 * 60)
+        URL: 'https://script.google.com/macros/s/AKfycbzSgPMRD7fC84DCKeL7a59maSOK8ZQKX2O30bU78xehierT0vOAKglXjMTaN4ha5ULGXA/exec',
+        // Updated Logic for 4.6.0 (3h 05m Cycle)
+        H_CYC: 11100000, 
+        GREEN: 3900000, 
+        REF: 1735686000000,
+        V_CYC: 1200000, V_OPEN: 60000
     };
-    const IDS = ['c1','c2','b1','b2','b3','b4','b5','b6','b7'];
-    let cycleStart = null; 
+    const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
+    let isSyncing = false;
 
-    // Fetch the reference timestamp directly like the source site
-    fetch('/lib/cfg.dat')
-        .then(res => res.text())
-        .then(text => {
-            cycleStart = parseInt(text.trim(), 10) * 1000;
-        });
+    document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
 
-    function updateHangar() {
-        if (!cycleStart) return;
-
-        const elapsed = Math.floor((Date.now() - cycleStart) / 1000);
-        const remainingInTotal = CONFIG.TOTAL_CYCLE - (elapsed % CONFIG.TOTAL_CYCLE);
-        
-        const timerEl = document.getElementById('h-timer');
-        const labelEl = document.getElementById('h-label');
-        const miniEl = document.getElementById('h-mini');
-
-        // Main timer is the total cycle countdown
-        timerEl.textContent = formatHHMMSS(remainingInTotal);
-
-        if (remainingInTotal > CONFIG.GREEN_PHASE + CONFIG.BLACK_PHASE) {
-            // RED PHASE
-            const redRem = remainingInTotal - (CONFIG.GREEN_PHASE + CONFIG.BLACK_PHASE);
-            labelEl.textContent = "Hangar Closed";
-            labelEl.style.color = "red";
-            miniEl.textContent = `Opens in ${formatHHMMSS(redRem)}`;
-            timerEl.style.color = "var(--error-red)";
-        } else if (remainingInTotal > CONFIG.BLACK_PHASE) {
-            // GREEN PHASE
-            const greenRem = remainingInTotal - CONFIG.BLACK_PHASE;
-            labelEl.textContent = "Hangar Open";
-            labelEl.style.color = "limegreen";
-            miniEl.textContent = `Resets in ${formatHHMMSS(greenRem)}`;
-            timerEl.style.color = "var(--success-green)";
-        } else {
-            // BLACK PHASE
-            labelEl.textContent = "Hangar Resetting";
-            labelEl.style.color = "yellow";
-            miniEl.textContent = "";
-            timerEl.style.color = "yellow";
-        }
-    }
-
-    function formatHHMMSS(s) {
-        const h = Math.floor(s / 3600);
-        const m = Math.floor((s % 3600) / 60);
-        const sec = s % 60;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-    }
-
-    // --- OTHER SQUAD FUNCTIONS ---
-    async function syncWithCloud() {
+    function syncWithCloud() {
+        if(isSyncing) return;
         const code = document.getElementById('squad-code').value; if(!code) return;
-        setSyncUI('sync');
-        const cb = 'cb_' + Date.now();
+        isSyncing = true;
+        const cb = 'cb_' + Math.round(Date.now());
         window[cb] = (d) => {
-            inventory = d.inventory || [];
+            if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
+            if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
-            renderUI(); setSyncUI('ok'); delete window[cb];
+            inventory = d.inventory || []; renderInventory(); 
+            document.getElementById('indicator').className = 'conn-lamp lamp-ok';
+            setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
+            isSyncing = false; delete window[cb]; const s = document.getElementById('scr_'+cb); if(s) s.remove();
         };
-        const s = document.createElement('script');
-        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${Date.now()}`;
+        const s = document.createElement('script'); s.id = 'scr_'+cb; s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
         document.body.appendChild(s);
     }
 
-    function renderUI() {
-        ['Checkmate','Orbit','Ruin','Personal'].forEach(loc => {
-            const cont = document.getElementById(`inv-${loc}`);
-            cont.innerHTML = `<span class="loc-title">${loc === 'Personal' ? 'IN_TRANSIT' : loc.toUpperCase()}</span>`;
-            inventory.filter(i => i.loc === loc).forEach(item => {
-                cont.innerHTML += `<div class="inv-item"><div>${item.name}<br><span class="owner-tag">[ ${item.owner} ]</span></div></div>`;
+    function pushState() {
+        const code = document.getElementById('squad-code').value; if(!code) return;
+        const body = { groupCode: code, hangarRef: localStorage.getItem('cz-h-sync'), vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory };
+        IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
+        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
+        f.appendChild(i);
+        if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
+        document.body.appendChild(f); f.submit(); setTimeout(() => f.remove(), 1000); renderInventory();
+    }
+
+    function collectItem(id, name, sec) {
+        const user = document.getElementById('username').value || "Op";
+        localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
+        inventory.push({ uid: Date.now() + Math.random(), id, name, loc: 'Personal', owner: user });
+        pushState();
+    }
+
+    function adjustTimer(id) {
+        let m = prompt("Minutes remaining:");
+        if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
+    }
+
+    function moveItem(uid) {
+        const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
+        const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
+        if(valid.includes(target)) { const item = inventory.find(i => i.uid === uid); if(item) { item.loc = target; pushState(); } }
+    }
+
+    function renderInventory() {
+        ['Personal', 'Checkmate', 'Orbit', 'Ruin'].forEach(loc => {
+            const container = document.getElementById(`inv-${loc}`);
+            const items = inventory.filter(i => i.loc === loc);
+            container.innerHTML = `<span class="loc-title">${loc === 'Personal' ? 'OPERATOR_INV' : loc.toUpperCase()}</span>`;
+            items.forEach(item => {
+                const div = document.createElement('div'); div.className = 'inv-item'; div.style.borderLeftColor = getLocColor(loc);
+                div.innerHTML = `<div>${item.name}<br><small style="color:#555">BY: ${item.owner}</small></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:var(--error-red)" onclick="dropItem(${item.uid})">X</button></div>`;
+                container.appendChild(div);
             });
         });
+        const required = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
+        const currentNames = inventory.map(i => i.name);
+        document.getElementById('mission-banner').style.display = required.every(r => currentNames.includes(r)) ? 'block' : 'none';
     }
 
-    function collectItem(id, name, sec, loc) {
-        localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
-        syncWithCloud();
-    }
+    function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
+    function dropItem(uid) { inventory = inventory.filter(i => i.uid !== uid); pushState(); }
+    function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushState(); }
+    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
 
-    function setSyncUI(state) { document.getElementById('sync-lamp').className = 'conn-lamp ' + (state === 'ok' ? 'lamp-ok' : 'lamp-syncing'); }
-    function clearAllData() { localStorage.clear(); location.reload(); }
+    function updateTimers() {
+        const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
+        const hE = ((Date.now() + hS - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
+        const isHO = hE < CONFIG.GREEN;
+        const sH = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
+        document.getElementById('h-timer').textContent = `${String(Math.floor(sH/60)).padStart(2,'0')}:${String(sH%60).padStart(2,'0')}`;
+        document.getElementById('h-timer').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
 
-    setInterval(() => {
-        updateHangar();
+        const vS = parseInt(localStorage.getItem('cz-v-sync'));
+        if(vS) {
+            const elV = (Date.now() - vS) % CONFIG.V_CYC;
+            const isVO = elV < CONFIG.V_OPEN;
+            const sV = Math.ceil((isVO ? CONFIG.V_OPEN - elV : CONFIG.V_CYC - elV) / 1000);
+            document.getElementById('v-timer').textContent = `${String(Math.floor(sV/60)).padStart(2,'0')}:${String(sV%60).padStart(2,'0')}`;
+            document.getElementById('v-timer').style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
+        }
+
         IDS.forEach(id => {
-            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`));
-            const el = document.getElementById(`${id}-timer`);
-            if (el && exp && exp > Date.now()) {
-                const rem = Math.ceil((exp - Date.now())/1000);
-                el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`;
-                el.style.color = 'var(--error-red)';
-            } else if (el) {
-                el.textContent = "READY";
-                el.style.color = 'var(--success-green)';
+            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
+            if(el) {
+                if(exp && exp > Date.now()) {
+                    const s = Math.ceil((exp - Date.now()) / 1000);
+                    el.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+                    el.style.color = 'var(--error-red)';
+                } else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
             }
         });
-    }, 1000);
+    }
+
+    setInterval(updateTimers, 1000);
+    setInterval(syncWithCloud, 30000);
+    window.onload = renderInventory;
 </script>
 </body>
 </html>
