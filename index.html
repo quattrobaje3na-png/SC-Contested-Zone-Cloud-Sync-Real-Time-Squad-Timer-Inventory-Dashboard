@@ -78,7 +78,6 @@
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 5px 8px; cursor: pointer; }
         
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 15px var(--success-green); } }
-        canvas { display: none; }
     </style>
 </head>
 <body>
@@ -92,9 +91,9 @@
     </div>
 
     <div class="briefing-panel">
-        <b>[ SQUAD_SYNC_v1.0 ]</b><br>
-        • Enter <b>SQUAD_CODE</b> to share timers & inventory across squad.<br>
-        • Click <b>MOVE</b> to shift items between LZ inventories.
+        <b>[ SQUAD_SYNC_v1.1 ]</b><br>
+        • Hangar Timer calibrated for Alpha 4.6.0 (2h Red / 1h Green / 5m Black).<br>
+        • Enter <b>SQUAD_CODE</b> to share status across squad.
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL KEYS SECURED ]</div>
@@ -102,9 +101,9 @@
     <div class="main-grid">
         <div class="ops-column">
             <div class="exec-hero">
-                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
-                <div id="h-timer">00:00</div>
-                <button class="btn-terminal" style="max-width: 250px; margin: 0 auto;" onclick="manualSync('h')">[ CALIBRATE ]</button>
+                <span id="h-label" class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
+                <div id="h-timer">00:00:00</div>
+                <button class="btn-terminal" style="max-width: 250px; margin: 0 auto;" onclick="manualSync('h')">[ CALIBRATE_START ]</button>
             </div>
 
             <div class="lz-group">
@@ -156,21 +155,18 @@
     </div>
 </div>
 
-<canvas id="monitor-canvas" width="20" height="20"></canvas>
-
 <script>
     const CONFIG = {
         URL: 'https://script.google.com/macros/s/AKfycbyBSHzDAa1tipoej3JPiWKFOVqZjfi05esA9Jnc2R6KWasgCbTEOSIkfuKOPUVnx7wXgQ/exec',
-        H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775
+        RED_PHASE: 120 * 60,   // 2 hours
+        GREEN_PHASE: 60 * 60,  // 1 hour
+        BLACK_PHASE: 5 * 60,   // 5 minutes
+        TOTAL_CYCLE: (120 * 60) + (60 * 60) + (5 * 60) // 11100 seconds
     };
     const IDS = ['c1','c2','b1','b2','b3','b4','b5','b6','b7'];
     let inventory = []; let isSyncing = false;
 
-    function setSyncUI(state) {
-        document.getElementById('sync-lamp').className = 'conn-lamp ' + (state === 'ok' ? 'lamp-ok' : 'lamp-syncing');
-        document.getElementById('sync-status').innerText = `[ SYNC_${state.toUpperCase()} ]`;
-    }
-
+    // --- CLOUD SYNC ---
     async function syncWithCloud() {
         if(isSyncing) return;
         const code = document.getElementById('squad-code').value; if(!code) return;
@@ -188,7 +184,6 @@
         const s = document.createElement('script');
         s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${Date.now()}`;
         document.body.appendChild(s);
-        setTimeout(() => { if(isSyncing) isSyncing = false; }, 5000);
     }
 
     function pushState() {
@@ -207,6 +202,43 @@
         setTimeout(() => { f.remove(); syncWithCloud(); }, 1200);
     }
 
+    // --- HANGAR CALCULATION ---
+    function updateHangar() {
+        const start = parseInt(localStorage.getItem('cz-h-sync') || 0);
+        if(!start) return;
+
+        const elapsed = Math.floor((Date.now() - start) / 1000);
+        const timeIntoCycle = ((elapsed % CONFIG.TOTAL_CYCLE) + CONFIG.TOTAL_CYCLE) % CONFIG.TOTAL_CYCLE;
+        
+        const timerEl = document.getElementById('h-timer');
+        const labelEl = document.getElementById('h-label');
+
+        if (timeIntoCycle < CONFIG.RED_PHASE) {
+            const rem = CONFIG.RED_PHASE - timeIntoCycle;
+            timerEl.textContent = formatHHMMSS(rem);
+            timerEl.style.color = 'var(--error-red)';
+            labelEl.textContent = "PRIMARY: HANGAR_LOCKED";
+        } else if (timeIntoCycle < CONFIG.RED_PHASE + CONFIG.GREEN_PHASE) {
+            const rem = (CONFIG.RED_PHASE + CONFIG.GREEN_PHASE) - timeIntoCycle;
+            timerEl.textContent = formatHHMMSS(rem);
+            timerEl.style.color = 'var(--success-green)';
+            labelEl.textContent = "PRIMARY: HANGAR_OPEN";
+        } else {
+            const rem = CONFIG.TOTAL_CYCLE - timeIntoCycle;
+            timerEl.textContent = formatHHMMSS(rem);
+            timerEl.style.color = 'yellow';
+            labelEl.textContent = "PRIMARY: HANGAR_RESETTING";
+        }
+    }
+
+    function formatHHMMSS(s) {
+        const h = Math.floor(s / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+
+    // --- INVENTORY & TERMINALS ---
     function collectItem(id, name, sec, loc) {
         const user = document.getElementById('username').value || "Op";
         localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
@@ -217,14 +249,13 @@
     function renderUI() {
         ['Checkmate','Orbit','Ruin','Personal'].forEach(loc => {
             const cont = document.getElementById(`inv-${loc}`);
-            const title = loc === 'Personal' ? 'IN_TRANSIT' : loc.toUpperCase();
-            cont.innerHTML = `<span class="loc-title">${title}</span>`;
+            cont.innerHTML = `<span class="loc-title">${loc === 'Personal' ? 'IN_TRANSIT' : loc.toUpperCase()}</span>`;
             inventory.filter(i => i.loc === loc).forEach(item => {
                 cont.innerHTML += `<div class="inv-item"><div>${item.name}<br><span class="owner-tag">[ ${item.owner} ]</span></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:red" onclick="dropItem(${item.uid})">X</button></div></div>`;
             });
         });
-        const req = ['KEY_3-4','KEY_3-5','BOARD_01','BOARD_02','BOARD_03','BOARD_04','BOARD_05','BOARD_06','BOARD_07'];
         const has = inventory.map(i => i.name);
+        const req = ['KEY_3-4','KEY_3-5','BOARD_01','BOARD_02','BOARD_03','BOARD_04','BOARD_05','BOARD_06','BOARD_07'];
         document.getElementById('mission-banner').style.display = req.every(r => has.includes(r)) ? 'block' : 'none';
     }
 
@@ -236,26 +267,27 @@
 
     function dropItem(uid) { inventory = inventory.filter(i => i.uid !== uid); pushState(); }
     function adjustTimer(id) { let m = prompt("Min:"); if(m) { localStorage.setItem(`cz-${id}-timer`, Date.now()+(parseInt(m)*60000)); pushState(); } }
-    function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushState(); }
+    function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', Date.now()); else localStorage.setItem('cz-v-sync', Date.now()); pushState(); }
     function clearAllData() { if(confirm("WIPE DATA?")) { inventory=[]; localStorage.clear(); pushState(); location.reload(); } }
+    function setSyncUI(state) { document.getElementById('sync-lamp').className = 'conn-lamp ' + (state === 'ok' ? 'lamp-ok' : 'lamp-syncing'); }
 
+    // Main Tick
     setInterval(() => {
-        const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
-        const hE = ((Date.now() + hS - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
-        const isHO = hE < CONFIG.GREEN;
-        const s = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
-        document.getElementById('h-timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
-        document.getElementById('h-timer').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
+        updateHangar();
         IDS.forEach(id => {
             const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
             if(el) {
-                if(exp && exp > Date.now()) { const rem = Math.ceil((exp - Date.now())/1000); el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`; el.style.color = 'var(--error-red)'; }
+                if(exp && exp > Date.now()) { 
+                    const rem = Math.ceil((exp - Date.now())/1000); 
+                    el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`; 
+                    el.style.color = 'var(--error-red)'; 
+                }
                 else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
             }
         });
     }, 1000);
 
-    setInterval(syncWithCloud, 5000);
+    setInterval(syncWithCloud, 10000);
 </script>
 </body>
 </html>
