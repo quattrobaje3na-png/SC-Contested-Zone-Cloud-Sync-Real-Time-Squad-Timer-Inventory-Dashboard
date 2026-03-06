@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Engine Sync v9.5</title>
+    <title>SC Contested Zone: Precision Sync v9.6</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -153,7 +153,8 @@
         // REPLICATED COMMUNITY CORE LOGIC
         OPEN_WINDOW_SEC: 3900,
         CYCLE_LENGTH_SEC: 11100,
-        // The BigInt epoch math prevents the drift
+        // OFFSET: 13-second correction for precision sync
+        DRIFT_CORRECTION_SEC: 13 
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
@@ -227,14 +228,17 @@
     function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
 
     function updateTimers() {
-        // --- COMMUNITY REPLICATED TIMER ENGINE ---
+        // --- COMMUNITY CORE ENGINE WITH PRECISION CORRECTION ---
         const nowMs = Date.now();
         const cycleLen = CONFIG.CYCLE_LENGTH_SEC;
         const openLen = CONFIG.OPEN_WINDOW_SEC;
         
-        // Exact epoch alignment logic
+        // Division-based epoch math
         const totalSeconds = Math.floor(nowMs / 1000);
-        const cyclePosition = totalSeconds % cycleLen;
+        
+        // APPLY DRIFT CORRECTION: Adds 13s to sync with community tools
+        const correctedSeconds = totalSeconds + CONFIG.DRIFT_CORRECTION_SEC;
+        const cyclePosition = correctedSeconds % cycleLen;
         
         const isHangarOpen = cyclePosition < openLen;
         const secondsRemaining = isHangarOpen ? (openLen - cyclePosition) : (cycleLen - cyclePosition);
