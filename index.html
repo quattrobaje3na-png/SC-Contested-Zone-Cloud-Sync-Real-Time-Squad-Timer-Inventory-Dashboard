@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Squad Timer & Inventory Sync</title>
+    <title>SC Contested Zone: Global Squad Sync</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,7 +17,6 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
         .dashboard-container { padding: 10px; min-height: 100vh; display: flex; flex-direction: column; box-sizing: border-box; }
 
-        /* --- STICKY SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 12px; display: flex; flex-wrap: wrap; gap: 8px;
@@ -25,7 +24,6 @@
         }
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 14px; outline: none; flex: 1; min-width: 100px; }
 
-        /* --- MISSION STATUS BANNER --- */
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
             padding: 12px; margin-bottom: 15px; text-align: center; font-weight: bold;
@@ -33,7 +31,6 @@
         }
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 15px var(--success-green); } }
 
-        /* --- LAYOUT --- */
         .main-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media (min-width: 1024px) { .main-grid { grid-template-columns: 1fr 380px; } }
 
@@ -41,7 +38,6 @@
         .lz-header { background: #111; padding: 8px 12px; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; border-left: 5px solid #444; margin-bottom: 10px; text-transform: uppercase; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 
-        /* --- CARDS --- */
         .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 12px; display: flex; flex-direction: column; justify-content: space-between; }
         .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 20px; text-align: center; margin-bottom: 20px; }
         .timer-val { font-size: 28px; font-weight: bold; margin: 4px 0; font-variant-numeric: tabular-nums; }
@@ -50,13 +46,10 @@
         .btn-terminal { 
             background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
             padding: 12px; cursor: pointer; text-transform: uppercase; font-size: 11px; width: 100%; font-weight: 900;
-            touch-action: manipulation;
         }
         .btn-terminal:active { background: rgba(255,140,0,0.2); }
-
         .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 50px; font-family: monospace; }
 
-        /* --- INVENTORY MENU --- */
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 12px; }
         .inv-loc-group { margin-bottom: 15px; border: 1px solid #1a1a1a; padding: 8px; background: rgba(255,255,255,0.02); }
         .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 6px; }
@@ -88,9 +81,9 @@
     <div class="main-grid">
         <div class="ops-column">
             <div class="exec-hero">
-                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
-                <div id="h-timer" style="font-size:64px; font-weight:900;">00:00</div>
-                <button class="btn-terminal" style="width:180px; margin-top:10px;" onclick="manualSync('h')">[ CALIBRATE ]</button>
+                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR (GLOBAL_SYNC)</span>
+                <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
+                <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
             </div>
 
             <div class="lz-group">
@@ -137,7 +130,6 @@
                 <div class="op-grid">
                     <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
                     <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
-                    <div class="data-card" id="vault-card"><span class="op-label">VAULT_DOOR</span><div id="v-timer" class="timer-val">--:--</div><button class="btn-terminal" onclick="manualSync('v')">[ SYNC_OPEN ]</button></div>
                 </div>
             </div>
         </div>
@@ -158,11 +150,10 @@
 <script>
     const CONFIG = {
         URL: 'https://script.google.com/macros/s/AKfycbzSgPMRD7fC84DCKeL7a59maSOK8ZQKX2O30bU78xehierT0vOAKglXjMTaN4ha5ULGXA/exec',
-        // Updated Logic for 4.6.0 (3h 05m Cycle)
+        // PURE 4.6.0 LIVE CONSTANTS (No Calibration Required)
         H_CYC: 11100000, 
         GREEN: 3900000, 
-        REF: 1735686000000,
-        V_CYC: 1200000, V_OPEN: 60000
+        REF: 1735686000000
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
@@ -176,8 +167,6 @@
         isSyncing = true;
         const cb = 'cb_' + Math.round(Date.now());
         window[cb] = (d) => {
-            if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
-            if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
             inventory = d.inventory || []; renderInventory(); 
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
@@ -190,7 +179,7 @@
 
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
-        const body = { groupCode: code, hangarRef: localStorage.getItem('cz-h-sync'), vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory };
+        const body = { groupCode: code, inventory: inventory };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
         const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
@@ -235,26 +224,20 @@
 
     function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
     function dropItem(uid) { inventory = inventory.filter(i => i.uid !== uid); pushState(); }
-    function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushState(); }
     function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
 
     function updateTimers() {
-        const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
-        const hE = ((Date.now() + hS - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
+        // --- GLOBAL HANGAR LOGIC ---
+        const hE = ((Date.now() - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
         const isHO = hE < CONFIG.GREEN;
         const sH = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
+        
         document.getElementById('h-timer').textContent = `${String(Math.floor(sH/60)).padStart(2,'0')}:${String(sH%60).padStart(2,'0')}`;
         document.getElementById('h-timer').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
+        document.getElementById('h-status').textContent = isHO ? "OPEN" : "CLOSED";
+        document.getElementById('h-status').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
 
-        const vS = parseInt(localStorage.getItem('cz-v-sync'));
-        if(vS) {
-            const elV = (Date.now() - vS) % CONFIG.V_CYC;
-            const isVO = elV < CONFIG.V_OPEN;
-            const sV = Math.ceil((isVO ? CONFIG.V_OPEN - elV : CONFIG.V_CYC - elV) / 1000);
-            document.getElementById('v-timer').textContent = `${String(Math.floor(sV/60)).padStart(2,'0')}:${String(sV%60).padStart(2,'0')}`;
-            document.getElementById('v-timer').style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
-        }
-
+        // --- LOCAL COOLDOWNS ---
         IDS.forEach(id => {
             const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
             if(el) {
