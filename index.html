@@ -3,58 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v11.7</title>
+    <title>Squad Ops Terminal v11.8</title>
     <style>
         :root { --terminal-orange: #FF8C00; --terminal-bg: #000; --terminal-border: #333; --success-green: #00FF00; --error-red: #ef4444; --intel-blue: #0088ff; }
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
         .dashboard-container { padding: 20px; }
-
-        /* HEADER */
         .sync-header { background: #050505; border-bottom: 2px solid var(--terminal-orange); padding: 15px; display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100; margin-bottom: 20px; }
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
         .lamp-syncing { background: var(--terminal-orange); box-shadow: 0 0 10px var(--terminal-orange); }
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; width: 140px; }
-
-        /* GRID & SECTIONS */
         .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
         .lz-group { margin-bottom: 30px; }
         .lz-header { background: #111; padding: 8px 15px; font-size: 11px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-
-        /* CARDS */
         .data-card { border: 1px solid var(--terminal-border); background: #0a0a0a; padding: 15px; }
         .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
         .op-label { color: var(--terminal-orange); font-size: 10px; text-transform: uppercase; display: block; }
-        
-        /* BUTTONS */
         .btn-terminal { background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); padding: 8px; cursor: pointer; font-size: 10px; width: 100%; font-weight: 900; margin-top: 5px; }
         .btn-adj { background: #111; border: 1px solid #444; color: #555; padding: 3px 6px; cursor: pointer; font-size: 9px; margin-left: auto; display: block; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 2px 5px; cursor: pointer; margin-left: 3px; }
         .btn-drop { background: #200; border: 1px solid #500; color: var(--error-red); }
-
-        /* SIDEBAR */
         .side-block { background: #0a0a0a; border: 1px solid #222; padding: 15px; margin-bottom: 15px; }
         .inv-loc-group { margin-bottom: 15px; border-bottom: 1px solid #1a1a1a; padding-bottom: 10px; }
         .loc-title { font-size: 10px; color: var(--terminal-orange); font-weight: bold; margin-bottom: 8px; display: block; border-left: 3px solid var(--terminal-orange); padding-left: 8px; }
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; background: #111; margin-top: 4px; font-size: 11px; border-left: 3px solid #444; }
-        .owner-tag { color: var(--intel-blue); font-size: 9px; font-weight: bold; text-transform: uppercase; }
         .bio-entry { font-size: 11px; margin-bottom: 6px; padding: 8px; background: #111; border-left: 4px solid #333; }
-
         canvas { display: none; }
     </style>
 </head>
 <body>
-
 <div class="dashboard-container">
     <div class="sync-header">
         <div id="sync-lamp" class="conn-lamp"></div>
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; margin:0; padding: 5px 15px;" onclick="forceFetchAll()">[ FETCH ]</button>
-        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v11.7_RESTORED ]</span>
+        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v11.8_STABLE ]</span>
     </div>
-
     <div class="main-grid">
         <div class="ops-column">
             <div class="data-card" style="text-align:center; border-color:orange; margin-bottom:25px;">
@@ -62,7 +48,6 @@
                 <div id="h-timer" style="font-size:64px; font-weight:bold;">00:00</div>
                 <button class="btn-terminal" style="width:150px" onclick="manualSync('h')">CALIBRATE</button>
             </div>
-
             <div class="lz-group">
                 <div class="lz-header" style="border-color: var(--success-green)">ACCESS_KEYCARDS</div>
                 <div class="op-grid">
@@ -70,7 +55,6 @@
                     <div class="data-card"><span class="op-label">KEY_3-5</span><div id="c2-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('c2','KEY_3-5',1800, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button></div></div>
                 </div>
             </div>
-
             <div class="lz-group">
                 <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
                 <div class="op-grid">
@@ -79,7 +63,6 @@
                     <div class="data-card"><span class="op-label">B_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b3','BOARD_03',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div></div>
                 </div>
             </div>
-
             <div class="lz-group">
                 <div class="lz-header" style="border-color: #0088ff">LZ: ORBITUARY</div>
                 <div class="op-grid">
@@ -87,7 +70,6 @@
                     <div class="data-card"><span class="op-label">B_07 [R+B]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b7','BOARD_07',1200, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
                 </div>
             </div>
-
             <div class="lz-group">
                 <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
                 <div class="op-grid">
@@ -97,20 +79,17 @@
                 </div>
             </div>
         </div>
-
         <div class="side-column">
             <div class="side-block" style="border-color:var(--success-green);">
                 <span class="op-label" style="color:var(--success-green);">AUTO_SENTRY</span>
                 <div id="sentry-info" style="font-size:10px; margin: 5px 0;">STATUS: OFFLINE</div>
                 <button class="btn-terminal" onclick="startAutoSentry()">LINK_GAME_WINDOW</button>
             </div>
-
             <div class="side-block">
                 <span class="op-label">SQUAD_BIO</span>
                 <div id="player-list"></div>
                 <button class="btn-terminal" style="border-color:red; color:red;" onclick="manualMedToggle()">SOS</button>
             </div>
-
             <div class="side-block">
                 <span class="op-label">SQUAD_INVENTORY</span>
                 <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
@@ -118,14 +97,11 @@
                 <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
                 <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">IN_TRANSIT</span></div>
             </div>
-
-            <button class="btn-terminal" style="border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">WIPE</button>
+            <button class="btn-terminal" style="border-color:red; color:red;" onclick="clearAllData()">WIPE</button>
         </div>
     </div>
 </div>
-
-<canvas id="monitor-canvas" width="100" height="100"></canvas>
-
+<canvas id="monitor-canvas" width="20" height="20"></canvas>
 <script>
     const CONFIG = {
         ZONE_URL: 'https://script.google.com/macros/s/AKfycbyBSHzDAa1tipoej3JPiWKFOVqZjfi05esA9Jnc2R6KWasgCbTEOSIkfuKOPUVnx7wXgQ/exec',
@@ -135,55 +111,50 @@
     const IDS = ['c1','c2','b1','b2','b3','b4','b5','b6','b7'];
     let inventory = []; let medicalBeacons = {}; let isMonitoring = false; let deathDetected = false;
 
-    // --- DETECTION LOGIC FROM GITHUB SCRIPT ---
+    // --- RECTIFIED GITHUB LOGIC ---
     async function startAutoSentry() {
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: "never" } });
             const video = document.createElement('video'); video.srcObject = stream; video.play();
             isMonitoring = true; document.getElementById('sentry-info').innerText = "STATUS: ACTIVE";
-            const canvas = document.getElementById('monitor-canvas'); const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const canvas = document.getElementById('monitor-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
             setInterval(() => {
                 if(!isMonitoring) return;
-                ctx.drawImage(video, 40, 40, 20, 20, 0, 0, 20, 20); // Focus on central frame
+                // EXACT GITHUB METHOD: Center crop 20x20
+                ctx.drawImage(video, video.videoWidth/2 - 10, video.videoHeight/2 - 10, 20, 20, 0, 0, 20, 20);
                 const frame = ctx.getImageData(0, 0, 20, 20);
-                const data = new Uint32Array(frame.data.buffer);
+                const data = frame.data;
+                let blackCount = 0; let redCount = 0;
 
-                let blackPixels = 0; let redPixels = 0;
-                for (let i = 0; i < data.length; i++) {
-                    const r = (data[i] >> 0) & 0xFF;
-                    const g = (data[i] >> 8) & 0xFF;
-                    const b = (data[i] >> 16) & 0xFF;
-
-                    if (r < 15 && g < 15 && b < 15) blackPixels++; // Death Detection
-                    if (r > 120 && g < 60 && b < 60) redPixels++; // Incap Detection
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i], g = data[i+1], b = data[i+2];
+                    // Exact threshold: Lum < 15 for Death
+                    if (r < 15 && g < 15 && b < 15) blackCount++;
+                    // Exact threshold: Red dominant for Incap
+                    if (r > 120 && g < 60 && b < 60) redCount++;
                 }
 
-                if (blackPixels > 380 && !deathDetected) { 
-                    deathDetected = true; updateMedCloud("DECEASED"); 
+                if (blackCount > 350 && !deathDetected) {
+                    deathDetected = true; updateMedCloud("DECEASED");
                     setTimeout(() => { deathDetected = false; updateMedCloud("HEALTHY"); }, 45000);
-                } else if (redPixels > 150) { 
-                    updateMedCloud("INCAPACITATED"); 
+                } else if (redCount > 150) {
+                    updateMedCloud("INCAPACITATED");
                 }
             }, 3000);
         } catch(e) { console.error(e); }
     }
 
-    // --- CORE TERMINAL FUNCTIONS ---
-    function setSyncUI(state, msg) {
-        document.getElementById('sync-lamp').className = 'conn-lamp lamp-' + state;
-        document.getElementById('sync-text').innerText = `[ ${msg.toUpperCase()} ]`;
-    }
-
+    // --- CORE TOOLS ---
     function forceFetchAll() {
         const code = document.getElementById('squad-code').value; if(!code) return;
-        setSyncUI('syncing', 'fetching');
         const zCB = 'zcb_' + Date.now();
         window[zCB] = (d) => {
             if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
             if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
-            inventory = d.inventory || []; renderUI(); setSyncUI('ok', 'connected'); delete window[zCB];
+            inventory = d.inventory || []; renderUI(); delete window[zCB];
         };
         const s = document.createElement('script'); s.src = `${CONFIG.ZONE_URL}?groupCode=${code}&prefix=${zCB}&t=${Date.now()}`;
         document.body.appendChild(s);
@@ -201,7 +172,6 @@
         const code = document.getElementById('squad-code').value; if(!code) return;
         const body = { groupCode: code, hangarRef: localStorage.getItem('cz-h-sync'), vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
-
         const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.ZONE_URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
@@ -213,44 +183,32 @@
         setTimeout(() => { f.remove(); forceFetchAll(); }, 1500); 
     }
 
-    async function updateMedCloud(status) {
-        const user = document.getElementById('username').value; const code = document.getElementById('squad-code').value;
-        if(!user || !code) return;
-        fetch(CONFIG.MED_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ groupCode: code, playerName: user, status: status }) });
-    }
-
     function renderUI() {
         ['Checkmate','Orbit','Ruin','Personal'].forEach(locKey => {
             const containerId = locKey === 'Personal' ? 'inv-Personal' : `inv-${locKey}`;
             const cont = document.getElementById(containerId);
-            const title = locKey === 'Personal' ? 'IN_TRANSIT' : locKey.toUpperCase();
-            cont.innerHTML = `<span class="loc-title">${title}</span>`;
+            cont.innerHTML = `<span class="loc-title">${locKey === 'Personal' ? 'IN_TRANSIT' : locKey.toUpperCase()}</span>`;
             inventory.filter(i => i.loc === locKey).forEach(item => {
-                cont.innerHTML += `<div class="inv-item"><div><span>${item.name}</span><br><span class="owner-tag">[ ${item.owner} ]</span></div><div style="display:flex;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini btn-drop" onclick="dropItem(${item.uid})">DROP</button></div></div>`;
+                cont.innerHTML += `<div class="inv-item"><div><span>${item.name}</span><br><span style="color:var(--intel-blue);font-size:9px;">[ ${item.owner} ]</span></div><div style="display:flex;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini btn-drop" onclick="dropItem(${item.uid})">DROP</button></div></div>`;
             });
         });
-
         const list = document.getElementById('player-list'); list.innerHTML = "";
         const allOps = [...new Set([...inventory.map(i => i.owner), ...Object.keys(medicalBeacons)])].filter(n => n && n !== "Op");
         allOps.forEach(name => {
             const state = medicalBeacons[name] ? medicalBeacons[name].state : "HEALTHY";
             let sCol = "#00FF00"; if(state === "INCAPACITATED") sCol = "#FF0000"; else if(state === "DECEASED") sCol = "#444";
-            list.innerHTML += `<div class="bio-entry" style="border-left:4px solid ${sCol}"><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:900;">${name.toUpperCase()}</span><span style="color:${sCol}; font-size:9px; font-weight:bold;">[ ${state} ]</span></div></div>`;
+            list.innerHTML += `<div class="bio-entry" style="border-left:4px solid ${sCol}">${name.toUpperCase()}: <span style="color:${sCol}">${state}</span></div>`;
         });
     }
 
-    function collectItem(id, name, sec, initialLoc) {
-        const user = document.getElementById('username').value || "Op";
-        localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
-        inventory.push({ uid: Date.now() + Math.random(), id, name, loc: initialLoc, owner: user });
-        pushZoneState();
-    }
-    function adjustTimer(id) { let m = prompt("Minutes remaining:"); if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushZoneState(); } }
-    function moveItem(uid) { const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?"); const item = inventory.find(i => i.uid === uid); if(item && ['Checkmate', 'Orbit', 'Ruin', 'Personal'].includes(target)) { item.loc = target; pushZoneState(); } }
-    function dropItem(uid) { if(confirm("DELETE ITEM?")) { inventory = inventory.filter(i => i.uid !== uid); pushZoneState(); } }
+    function collectItem(id, name, sec, loc) { inventory.push({ uid: Date.now()+Math.random(), id, name, loc, owner: document.getElementById('username').value || "Op" }); localStorage.setItem(`cz-${id}-timer`, Date.now()+(sec*1000)); pushZoneState(); }
+    function adjustTimer(id) { let m = prompt("Min:"); if(m) { localStorage.setItem(`cz-${id}-timer`, Date.now()+(parseInt(m)*60000)); pushZoneState(); } }
+    function moveItem(uid) { let t = prompt("Target: Checkmate, Orbit, Ruin, Personal"); let item = inventory.find(i=>i.uid===uid); if(item) { item.loc=t; pushZoneState(); } }
+    function dropItem(uid) { if(confirm("Drop?")) { inventory=inventory.filter(i=>i.uid!==uid); pushZoneState(); } }
     function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushZoneState(); }
-    function manualMedToggle() { const user = document.getElementById('username').value; const state = (medicalBeacons[user]?.state === "INCAPACITATED") ? "HEALTHY" : "INCAPACITATED"; updateMedCloud(state); }
-    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory=[]; localStorage.clear(); pushZoneState(); location.reload(); } }
+    function manualMedToggle() { let user = document.getElementById('username').value; let s = (medicalBeacons[user]?.state === "INCAPACITATED") ? "HEALTHY" : "INCAPACITATED"; updateMedCloud(s); }
+    async function updateMedCloud(s) { fetch(CONFIG.MED_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ groupCode: document.getElementById('squad-code').value, playerName: document.getElementById('username').value, status: s }) }); }
+    function clearAllData() { if(confirm("Wipe?")) { inventory=[]; localStorage.clear(); pushZoneState(); location.reload(); } }
 
     setInterval(() => {
         const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
