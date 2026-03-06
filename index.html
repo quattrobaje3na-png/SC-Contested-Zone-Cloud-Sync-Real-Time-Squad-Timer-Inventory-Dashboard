@@ -3,307 +3,306 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v11.5</title>
+    <title>Strategic Ops Terminal v8.0</title>
     <style>
-        :root { 
-            --terminal-orange: #FF8C00; 
-            --terminal-bg: #000; 
-            --terminal-border: #333; 
-            --success-green: #00FF00; 
-            --error-red: #ef4444; 
-            --intel-blue: #0088ff; 
+        :root {
+            --terminal-orange: #FF8C00;
+            --terminal-bg: rgba(5,5,5,0.98);
+            --terminal-border: #333;
+            --success-green: #00FF00;
+            --error-red: #ef4444;
+            --intel-blue: #0088ff;
         }
 
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
-        .dashboard-container { padding: 20px; }
+        .training-dashboard { display: flex; flex-direction: column; min-height: 100vh; padding: 20px; }
 
-        /* SYNC HEADER */
-        .sync-header { 
-            background: #050505; border-bottom: 2px solid var(--terminal-orange); 
-            padding: 15px; display: flex; align-items: center; gap: 15px; 
-            position: sticky; top: 0; z-index: 100; margin-bottom: 20px; 
-        }
-        .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; transition: 0.3s; }
-        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
-        .lamp-syncing { background: var(--terminal-orange); box-shadow: 0 0 10px var(--terminal-orange); }
-        .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; width: 140px; outline: none; }
-
-        /* EMERGENCY ALERT */
-        #emergency-banner { 
-            display: none; background: rgba(239, 68, 68, 0.2); border: 2px solid var(--error-red); 
-            padding: 10px; margin-bottom: 20px; text-align: center; font-weight: bold; 
-            animation: pulse-red-bg 1.5s infinite; 
+        .sync-header {
+            background: #050505; border-bottom: 2px solid var(--terminal-orange);
+            padding: 15px 30px; display: flex; flex-wrap: wrap; gap: 15px;
+            align-items: center; position: sticky; top: 0; z-index: 100; margin-bottom: 20px;
         }
 
-        /* GRID SYSTEM */
-        .main-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
-        .lz-group { margin-bottom: 30px; }
-        .lz-header { 
-            background: #111; padding: 8px 15px; font-size: 11px; font-weight: 900; 
-            letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; 
+        .header-input {
+            background: #000; border: 1px solid #444; color: var(--terminal-orange);
+            padding: 8px; font-family: monospace; font-size: 12px; outline: none;
         }
-        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 
-        /* CARDS & TIMERS */
-        .data-card { border: 1px solid var(--terminal-border); background: #0a0a0a; padding: 15px; }
-        .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
-        .op-label { color: var(--terminal-orange); font-size: 10px; text-transform: uppercase; display: block; }
+        .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
+        .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
         
-        /* BUTTONS */
+        .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 15px; position: relative; }
+        .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 25px; text-align: center; margin-bottom: 30px; }
+        
+        .op-label { color: var(--terminal-orange); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; display: block; }
+        .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
+        
         .btn-terminal { 
             background: transparent; border: 1px solid var(--terminal-orange); color: var(--terminal-orange); 
-            padding: 8px; cursor: pointer; font-size: 10px; width: 100%; font-weight: 900; margin-top: 5px; 
+            padding: 8px; cursor: pointer; text-transform: uppercase; font-size: 10px; width: 100%; transition: 0.2s;
         }
-        .btn-adj { background: #111; border: 1px solid #444; color: #888; padding: 3px 6px; cursor: pointer; font-size: 9px; margin-left: auto; display: block; }
-        .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 2px 5px; cursor: pointer; margin-left: 3px; }
-        .btn-drop { background: #200; border: 1px solid #500; color: var(--error-red); }
+        .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
 
-        /* SIDEBAR BLOCKS */
-        .side-block { background: #0a0a0a; border: 1px solid #222; padding: 15px; margin-bottom: 15px; }
-        .inv-loc-group { margin-bottom: 15px; border-bottom: 1px solid #1a1a1a; padding-bottom: 10px; }
-        .loc-title { 
-            font-size: 10px; color: var(--terminal-orange); font-weight: bold; 
-            margin-bottom: 8px; display: block; border-left: 3px solid var(--terminal-orange); padding-left: 8px; 
-        }
-        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 6px; background: #111; margin-top: 4px; font-size: 11px; border-left: 3px solid #444; }
-        .owner-tag { color: var(--intel-blue); font-size: 9px; font-weight: bold; text-transform: uppercase; }
+        .inventory-manifest { background: #0a0a0a; border: 1px solid #222; padding: 15px; min-height: 200px; }
+        .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 5px; background: rgba(255,255,255,0.03); margin-top: 4px; font-size: 10px; border-left: 2px solid var(--terminal-orange); }
+        
+        .status-log { background: #050505; border: 1px solid #222; height: 160px; overflow-y: auto; font-size: 10px; color: #555; padding: 8px; margin-top: 20px; }
+        .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; }
+        .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
 
-        /* BIO ENTRIES */
-        .bio-entry { font-size: 11px; margin-bottom: 6px; padding: 8px; background: #111; border-left: 4px solid #333; }
-
-        @keyframes pulse-red-bg { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        canvas { display: none; }
+        .btn-adj { width: 45px; background: #111; border: 1px solid #444; color: #666; font-size: 9px; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div class="dashboard-container">
+<div class="training-dashboard">
     <div class="sync-header">
-        <div id="sync-lamp" class="conn-lamp"></div>
+        <div id="indicator" class="conn-lamp"></div>
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
-        <input type="text" id="username" class="header-input" placeholder="OP_NAME">
-        <button class="btn-terminal" style="width:auto; margin:0; padding: 5px 15px;" onclick="forceFetchAll()">[ FETCH ]</button>
-        <span id="sync-text" style="font-size:10px; color:#444; margin-left:auto;">[ v11.5_AEGIS ]</span>
+        <input type="text" id="username" class="header-input" placeholder="OPERATOR_NAME">
+        <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.0_GH_STABLE ]</span>
     </div>
-
-    <div id="emergency-banner">⚠️ CRITICAL: SQUAD MEMBER DOWN ⚠️</div>
 
     <div class="main-grid">
         <div class="ops-column">
-            <div class="data-card" style="text-align:center; border-color:orange; margin-bottom:25px;">
-                <span class="op-label">PRIMARY_HANGAR</span>
-                <div id="h-timer" style="font-size:64px; font-weight:bold;">00:00</div>
-                <button class="btn-terminal" style="width:150px" onclick="manualSync('h')">CALIBRATE</button>
+            <div class="exec-hero">
+                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
+                <div id="h-timer" style="font-size:72px; font-weight:900;">00:00</div>
+                <button class="btn-terminal" style="width:200px" onclick="manualSync('h')">[ CALIBRATE_CYCLE ]</button>
             </div>
 
-            <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--success-green)">ACCESS_KEYCARDS</div>
-                <div class="op-grid">
-                    <div class="data-card"><span class="op-label">KEY_3-4</span><div id="c1-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('c1','KEY_3-4',1800, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">KEY_3-5</span><div id="c2-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('c2','KEY_3-5',1800, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button></div></div>
+            <div class="op-grid">
+                <div class="data-card">
+                    <span class="op-label">SUPVISR-3-4</span>
+                    <div id="c1-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button>
+                        <button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <span class="op-label">SUPVISR-3-5</span>
+                    <div id="c2-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button>
+                        <button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button>
+                    </div>
+                </div>
+                <div class="data-card" id="vault-card">
+                    <span class="op-label">VAULT_DOOR (20M)</span>
+                    <div id="v-timer" class="timer-val">--:--</div>
+                    <button class="btn-terminal" onclick="manualSync('v')">[ SYNC_OPEN ]</button>
                 </div>
             </div>
 
-            <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
-                <div class="op-grid">
-                    <div class="data-card"><span class="op-label">B_01 [RED]</span><div id="b1-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b1','BOARD_01',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">B_02 [BLUE]</span><div id="b2-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b2','BOARD_02',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">B_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b3','BOARD_03',1200, 'Checkmate')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div></div>
+            <span class="op-label" style="margin-top:30px;">02. COMPBOARD REGISTRY (20M COOLDOWN)</span>
+            <div class="op-grid">
+                <div class="data-card">
+                    <span style="font-size:10px;">B_01 [RED]</span>
+                    <div id="b1-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div>
                 </div>
-            </div>
-
-            <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
-                <div class="op-grid">
-                    <div class="data-card"><span class="op-label">B_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b4','BOARD_04',1200, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">B_07 [R+B]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b7','BOARD_07',1200, 'Orbit')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
+                <div class="data-card">
+                    <span style="font-size:10px;">B_02 [BLUE]</span>
+                    <div id="b2-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div>
                 </div>
-            </div>
-
-            <div class="lz-group">
-                <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
-                <div class="op-grid">
-                    <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b5','BOARD_05',1200, 'Ruin')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex;"><button class="btn-terminal" onclick="collectItem('b6','BOARD_06',1200, 'Ruin')">COLLECT</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
-                    <div class="data-card"><span class="op-label">VAULT</span><div id="v-timer" class="timer-val">--:--</div><button class="btn-terminal" onclick="manualSync('v')">SYNC_OPEN</button></div>
+                <div class="data-card">
+                    <span style="font-size:10px;">B_03 [BLUE]</span>
+                    <div id="b3-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div>
+                </div>
+                <div class="data-card">
+                    <span style="font-size:10px;">B_04 [RED]</span>
+                    <div id="b4-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div>
+                </div>
+                <div class="data-card">
+                    <span style="font-size:10px;">B_05 [CRYPT]</span>
+                    <div id="b5-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div>
+                </div>
+                <div class="data-card">
+                    <span style="font-size:10px;">B_06 [UNSEC]</span>
+                    <div id="b6-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div>
+                </div>
+                <div class="data-card">
+                    <span style="font-size:10px;">B_07 [R+B2]</span>
+                    <div id="b7-timer" class="timer-val">READY</div>
+                    <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div>
                 </div>
             </div>
         </div>
 
         <div class="side-column">
-            <div class="side-block" style="border-color:var(--success-green);">
-                <span class="op-label" style="color:var(--success-green);">AUTO_SENTRY</span>
-                <div id="sentry-info" style="font-size:10px; margin: 5px 0;">STATUS: OFFLINE</div>
-                <button class="btn-terminal" onclick="startAutoSentry()">LINK_GAME_WINDOW</button>
-            </div>
-
-            <div class="side-block">
-                <span class="op-label" style="color:var(--intel-blue);">SQUAD_BIO</span>
-                <div id="player-list"></div>
-                <button class="btn-terminal" style="border-color:red; color:red;" onclick="manualMedToggle()">SOS_BEACON</button>
-            </div>
-
-            <div class="side-block">
+            <div class="inventory-manifest">
                 <span class="op-label">SQUAD_INVENTORY</span>
-                <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
-                <div id="inv-Orbit" class="inv-loc-group"><span class="loc-title">ORBITUARY</span></div>
-                <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
-                <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">IN_TRANSIT</span></div>
+                <div id="inv-Checkmate" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ CHECKMATE ]</span></div>
+                <div id="inv-Orbit" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ ORBITUARY ]</span></div>
+                <div id="inv-Ruin" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ RUIN_STATION ]</span></div>
+                <div id="inv-Personal" style="margin-bottom:10px;"><span style="font-size:9px; color:#444;">[ OPERATOR_INV ]</span></div>
             </div>
-
-            <button class="btn-terminal" style="border-color:var(--error-red); color:var(--error-red); margin-top:10px;" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
+            <div id="terminal-log" class="status-log"></div>
+            <button class="btn-terminal" style="margin-top:10px; border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
         </div>
     </div>
 </div>
 
-<canvas id="monitor-canvas" width="100" height="100"></canvas>
-
 <script>
     const CONFIG = {
-        ZONE_URL: 'https://script.google.com/macros/s/AKfycbyBSHzDAa1tipoej3JPiWKFOVqZjfi05esA9Jnc2R6KWasgCbTEOSIkfuKOPUVnx7wXgQ/exec',
-        MED_URL: 'https://script.google.com/macros/s/AKfycbxPid8qIQpmW--T-fE6Qaz-CS5MbqaSIDKfZiJtMJe5rDYcP5LBVotXZDTkBrzXDL80/exec',
-        H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775
+        URL: 'https://script.google.com/macros/s/AKfycbx_wBHnaggUHWVEOEWhG4jmUX0yJd5kEK15tJqmg7nUvkDxy3dCCrDIZohEIz3wkJUHdg/exec',
+        H_CYC: 11101413, GREEN: 3900415, REF: 1769983794775,
+        V_CYC: 1200000, V_OPEN: 60000
     };
-    const IDS = ['c1','c2','b1','b2','b3','b4','b5','b6','b7'];
-    let inventory = []; let medicalBeacons = {}; let isMonitoring = false; let deathDetected = false;
+    const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
+    let inventory = [];
+    let isSyncing = false;
 
-    function setSyncUI(state, msg) {
-        document.getElementById('sync-lamp').className = 'conn-lamp lamp-' + state;
-        document.getElementById('sync-text').innerText = `[ ${msg.toUpperCase()} ]`;
-    }
-
-    function forceFetchAll() {
-        const code = document.getElementById('squad-code').value; if(!code) return;
-        setSyncUI('syncing', 'fetching');
-        const zCB = 'zcb_' + Date.now();
-        window[zCB] = (d) => {
+    // --- JSONP SYNC ---
+    function syncWithCloud() {
+        if(isSyncing) return;
+        const code = document.getElementById('squad-code').value;
+        if(!code) return;
+        isSyncing = true;
+        const callback = 'cb_' + Math.round(Date.now());
+        window[callback] = function(d) {
             if(d.hangarRef) localStorage.setItem('cz-h-sync', d.hangarRef);
             if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
             inventory = d.inventory || [];
-            renderUI(); setSyncUI('ok', 'connected'); delete window[zCB];
+            renderInventory(); 
+            document.getElementById('indicator').className = 'conn-lamp lamp-ok';
+            setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
+            isSyncing = false;
+            delete window[callback];
+            const s = document.getElementById('scr_'+callback);
+            if(s) s.remove();
         };
         const s = document.createElement('script');
-        s.src = `${CONFIG.ZONE_URL}?groupCode=${code}&prefix=${zCB}&t=${Date.now()}`;
+        s.id = 'scr_'+callback;
+        s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${callback}`;
         document.body.appendChild(s);
-
-        const mCB = 'mcb_' + Date.now();
-        window[mCB] = (data) => {
-            medicalBeacons = {}; data.forEach(p => { medicalBeacons[p.playerName] = { state: p.status }; });
-            renderUI(); delete window[mCB];
-        };
-        const ms = document.createElement('script');
-        ms.src = `${CONFIG.MED_URL}?groupCode=${code}&prefix=${mCB}&t=${Date.now()}`;
-        document.body.appendChild(ms);
     }
 
-    function pushZoneState() {
-        const code = document.getElementById('squad-code').value; if(!code) return;
-        const body = { groupCode: code, hangarRef: localStorage.getItem('cz-h-sync'), vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory };
+    // --- FORM PUSH ---
+    function pushState() {
+        const code = document.getElementById('squad-code').value;
+        if(!code) return;
+        const body = { 
+            groupCode: code, hangarRef: localStorage.getItem('cz-h-sync'), 
+            vaultRef: localStorage.getItem('cz-v-sync'), inventory: inventory 
+        };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
 
-        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.ZONE_URL; f.target = 'h_ifr';
+        const f = document.createElement('form');
+        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_iframe';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
-        if(!document.getElementById('h_ifr')) {
-            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none';
+        
+        if(!document.getElementById('h_iframe')) {
+            const ifr = document.createElement('iframe'); ifr.name = 'h_iframe'; ifr.id = 'h_iframe'; ifr.style.display = 'none';
             document.body.appendChild(ifr);
         }
-        document.body.appendChild(f); f.submit();
-        setTimeout(() => { f.remove(); forceFetchAll(); }, 1500); 
+        
+        document.body.appendChild(f);
+        f.submit();
+        setTimeout(() => f.remove(), 1000);
+        renderInventory();
     }
 
-    function collectItem(id, name, sec, initialLoc) {
+    function collectItem(id, name, sec) {
         const user = document.getElementById('username').value || "Op";
         localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
-        inventory.push({ uid: Date.now() + Math.random(), id, name, loc: initialLoc, owner: user });
-        pushZoneState();
+        inventory.push({ uid: Date.now() + Math.random(), id, name, loc: 'Personal', owner: user });
+        const log = document.getElementById('terminal-log');
+        log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] COLLECTED: ${name}</div>` + log.innerHTML;
+        pushState();
     }
 
     function moveItem(uid) {
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
-        const item = inventory.find(i => i.uid === uid);
-        if(item && ['Checkmate', 'Orbit', 'Ruin', 'Personal'].includes(target)) { item.loc = target; pushZoneState(); }
+        const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
+        if(valid.includes(target)) {
+            const item = inventory.find(i => i.uid === uid);
+            if(item) { item.loc = target; pushState(); }
+        }
     }
 
     function dropItem(uid) {
-        if(!confirm("DELETE ITEM?")) return;
         inventory = inventory.filter(i => i.uid !== uid);
-        pushZoneState();
+        pushState();
+    }
+
+    function renderInventory() {
+        ['Personal', 'Checkmate', 'Orbit', 'Ruin'].forEach(loc => {
+            const container = document.getElementById(`inv-${loc}`);
+            const items = inventory.filter(i => i.loc === loc);
+            container.innerHTML = `<span style="font-size:9px; color:#444;">[ ${loc.toUpperCase()} ]</span>`;
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'inv-item';
+                div.innerHTML = `<span>${item.name} (${item.owner})</span><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:var(--error-red)" onclick="dropItem(${item.uid})">X</button></div>`;
+                container.appendChild(div);
+            });
+        });
     }
 
     function adjustTimer(id) {
         let m = prompt("Minutes remaining:");
-        if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushZoneState(); }
+        if(m) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
     }
 
-    function renderUI() {
-        // Inv Rendering
-        ['Checkmate','Orbit','Ruin','Personal'].forEach(locKey => {
-            const containerId = locKey === 'Personal' ? 'inv-Personal' : `inv-${locKey}`;
-            const cont = document.getElementById(containerId);
-            const title = locKey === 'Personal' ? 'IN_TRANSIT' : locKey.toUpperCase();
-            cont.innerHTML = `<span class="loc-title">${title}</span>`;
-            inventory.filter(i => i.loc === locKey).forEach(item => {
-                cont.innerHTML += `<div class="inv-item"><div><span>${item.name}</span><br><span class="owner-tag">[ ${item.owner} ]</span></div><div style="display:flex;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini btn-drop" onclick="dropItem(${item.uid})">DROP</button></div></div>`;
-            });
-        });
-
-        // Bio Rendering
-        const list = document.getElementById('player-list'); list.innerHTML = "";
-        const allOps = [...new Set([...inventory.map(i => i.owner), ...Object.keys(medicalBeacons)])].filter(n => n && n !== "Op");
-        allOps.forEach(name => {
-            const state = medicalBeacons[name] ? medicalBeacons[name].state : "HEALTHY";
-            let sCol = "#00FF00"; if(state === "INCAPACITATED") sCol = "#FF0000"; else if(state === "DECEASED") sCol = "#444";
-            list.innerHTML += `<div class="bio-entry" style="border-left:4px solid ${sCol}"><div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight:900;">${name.toUpperCase()}</span><span style="color:${sCol}; font-size:9px; font-weight:bold;">[ ${state} ]</span></div></div>`;
-        });
-        document.getElementById('emergency-banner').style.display = Object.values(medicalBeacons).some(m => m.state === "INCAPACITATED") ? "block" : "none";
+    function manualSync(t) {
+        if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC));
+        else localStorage.setItem('cz-v-sync', Date.now());
+        pushState();
     }
 
-    async function startAutoSentry() {
-        try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            const video = document.createElement('video'); video.srcObject = stream; video.play();
-            isMonitoring = true; document.getElementById('sentry-info').innerText = "STATUS: ACTIVE";
-            const canvas = document.getElementById('monitor-canvas'); const ctx = canvas.getContext('2d');
-            setInterval(() => {
-                if(!isMonitoring) return; ctx.drawImage(video, 0, 0, 100, 100);
-                const d = ctx.getImageData(0,0,100,100).data;
-                let r=0, lum=0; for(let i=0; i<d.length; i+=4){ r+=d[i]; lum+=(d[i]+d[i+1]+d[i+2])/3; }
-                const avgR = r/(d.length/4); const avgL = lum/(d.length/4);
-                if(avgR > 145 && avgL < 90) updateMedCloud("INCAPACITATED");
-                else if(avgL < 8 && !deathDetected) { deathDetected = true; updateMedCloud("DECEASED"); setTimeout(() => { deathDetected = false; updateMedCloud("HEALTHY"); }, 45000); }
-            }, 3000);
-        } catch(e) { console.error(e); }
+    function clearAllData() {
+        if(!confirm("WIPE SQUAD DATA?")) return;
+        inventory = []; localStorage.clear();
+        pushState(); location.reload();
     }
 
-    async function updateMedCloud(status) {
-        const user = document.getElementById('username').value; const code = document.getElementById('squad-code').value;
-        if(!user || !code) return;
-        fetch(CONFIG.MED_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ groupCode: code, playerName: user, status: status }) });
-    }
-
-    function manualSync(t) { if(t==='h') localStorage.setItem('cz-h-sync', -(((Date.now()-CONFIG.REF)%CONFIG.H_CYC + CONFIG.H_CYC)%CONFIG.H_CYC)); else localStorage.setItem('cz-v-sync', Date.now()); pushZoneState(); }
-    function manualMedToggle() { const user = document.getElementById('username').value; const state = (medicalBeacons[user]?.state === "INCAPACITATED") ? "HEALTHY" : "INCAPACITATED"; updateMedCloud(state); }
-    function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory=[]; localStorage.clear(); pushZoneState(); location.reload(); } }
-
-    setInterval(() => {
+    function updateTimers() {
         const hS = parseInt(localStorage.getItem('cz-h-sync') || 0);
         const hE = ((Date.now() + hS - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
         const isHO = hE < CONFIG.GREEN;
-        const s = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
-        document.getElementById('h-timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+        document.getElementById('h-timer').textContent = formatTime(isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE);
         document.getElementById('h-timer').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
+
+        const vS = parseInt(localStorage.getItem('cz-v-sync'));
+        if(vS) {
+            const elapsed = (Date.now() - vS) % CONFIG.V_CYC;
+            const isVO = elapsed < CONFIG.V_OPEN;
+            const rem = isVO ? CONFIG.V_OPEN - elapsed : CONFIG.V_CYC - elapsed;
+            document.getElementById('v-timer').textContent = formatTime(rem);
+            document.getElementById('v-timer').style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
+        }
+
         IDS.forEach(id => {
-            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
+            const exp = parseInt(localStorage.getItem(`cz-${id}-timer`));
+            const el = document.getElementById(`${id}-timer`);
             if(el) {
-                if(exp && exp > Date.now()) { const rem = Math.ceil((exp - Date.now())/1000); el.textContent = `${String(Math.floor(rem/60)).padStart(2,'0')}:${String(rem%60).padStart(2,'0')}`; el.style.color = 'var(--error-red)'; }
-                else { el.textContent = "READY"; el.style.color = 'var(--success-green)'; }
+                if(exp && exp > Date.now()) {
+                    el.textContent = formatTime(exp - Date.now());
+                    el.style.color = 'var(--error-red)';
+                } else {
+                    el.textContent = "READY"; el.style.color = 'var(--success-green)';
+                }
             }
         });
-    }, 1000);
-    setInterval(forceFetchAll, 20000);
+    }
+
+    function formatTime(ms) {
+        const s = Math.ceil(ms / 1000);
+        return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+    }
+
+    setInterval(updateTimers, 1000);
+    setInterval(syncWithCloud, 30000);
 </script>
 </body>
 </html>
