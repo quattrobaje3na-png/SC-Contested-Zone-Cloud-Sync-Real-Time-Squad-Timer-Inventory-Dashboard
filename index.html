@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v8.5</title>
+    <title>Squad Ops Terminal v8.6</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,7 +17,6 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
         .dashboard-container { padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
 
-        /* --- SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 15px 30px; display: flex; flex-wrap: wrap; gap: 15px;
@@ -25,7 +24,6 @@
         }
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; outline: none; }
 
-        /* --- MISSION STATUS BANNER --- */
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
             padding: 15px; margin-bottom: 20px; text-align: center; font-weight: bold;
@@ -33,13 +31,11 @@
         }
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 20px var(--success-green); } }
 
-        /* --- LAYOUT --- */
         .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
         .lz-group { margin-bottom: 30px; }
         .lz-header { background: #111; padding: 8px 15px; font-size: 12px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
 
-        /* --- CARDS --- */
         .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 15px; }
         .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 25px; text-align: center; margin-bottom: 30px; }
         .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
@@ -51,7 +47,13 @@
         }
         .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
 
-        /* --- INVENTORY MENU (BOLDER) --- */
+        /* ADJUSTMENT BUTTON */
+        .btn-adj { 
+            background: #111; border: 1px solid #444; color: #666; 
+            padding: 10px; cursor: pointer; font-size: 10px; width: 60px; font-family: monospace;
+        }
+        .btn-adj:hover { border-color: var(--terminal-orange); color: #fff; }
+
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 15px; }
         .inv-loc-group { margin-bottom: 20px; border: 1px solid #1a1a1a; padding: 10px; background: rgba(255,255,255,0.02); }
         .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 8px; }
@@ -64,7 +66,7 @@
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 11px; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 9px; padding: 3px 6px; cursor: pointer; }
         
-        .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; }
+        .status-log { background: #050505; border: 1px solid #222; height: 180px; overflow-y: auto; font-size: 10px; color: #555; padding: 10px; margin-top: 20px; border-style: double; }
         .conn-lamp { width: 10px; height: 10px; border-radius: 50%; background: #222; display: inline-block; margin-right: 10px; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
     </style>
@@ -77,10 +79,10 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.5_ULTRA ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.6_ADJ_READY ]</span>
     </div>
 
-    <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL KEYS SECURED ]</div>
+    <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
 
     <div class="main-grid">
         <div class="ops-column">
@@ -93,33 +95,75 @@
             <div class="lz-group">
                 <div class="lz-header" style="border-color: var(--success-green)">ACCESS: SUPERVISOR_KEYS</div>
                 <div class="op-grid">
-                    <div class="data-card"><span class="op-label">SUP-3-4</span><div id="c1-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button></div>
-                    <div class="data-card"><span class="op-label">SUP-3-5</span><div id="c2-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button></div>
+                    <div class="data-card">
+                        <span class="op-label">SUP-3-4</span>
+                        <div id="c1-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-terminal" onclick="collectItem('c1', 'KEY_3-4', 1800)">[ COLLECT ]</button>
+                            <button class="btn-adj" onclick="adjustTimer('c1')">ADJ</button>
+                        </div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">SUP-3-5</span>
+                        <div id="c2-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-terminal" onclick="collectItem('c2', 'KEY_3-5', 1800)">[ COLLECT ]</button>
+                            <button class="btn-adj" onclick="adjustTimer('c2')">ADJ</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE (1, 2, 3)</div>
+                <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
                 <div class="op-grid">
-                    <div class="data-card"><span class="op-label">BOARD_01 [RED]</span><div id="b1-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button></div>
-                    <div class="data-card"><span class="op-label">BOARD_02 [BLUE]</span><div id="b2-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button></div>
-                    <div class="data-card"><span class="op-label">BOARD_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button></div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_01 [RED]</span>
+                        <div id="b1-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_02 [BLUE]</span>
+                        <div id="b2-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_03 [BLUE]</span>
+                        <div id="b3-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div>
+                    </div>
                 </div>
             </div>
 
             <div class="lz-group">
-                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY (4, 7)</div>
+                <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
                 <div class="op-grid">
-                    <div class="data-card"><span class="op-label">BOARD_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button></div>
-                    <div class="data-card"><span class="op-label">BOARD_07 [R+B2]</span><div id="b7-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button></div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_04 [RED]</span>
+                        <div id="b4-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_07 [R+B2]</span>
+                        <div id="b7-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div>
+                    </div>
                 </div>
             </div>
 
             <div class="lz-group">
-                <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION (5, 6, VAULT)</div>
+                <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
                 <div class="op-grid">
-                    <div class="data-card"><span class="op-label">BOARD_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button></div>
-                    <div class="data-card"><span class="op-label">BOARD_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button></div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_05 [CRYPT]</span>
+                        <div id="b5-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div>
+                    </div>
+                    <div class="data-card">
+                        <span class="op-label">BOARD_06 [UNSEC]</span>
+                        <div id="b6-timer" class="timer-val">READY</div>
+                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div>
+                    </div>
                     <div class="data-card" id="vault-card"><span class="op-label">VAULT_DOOR</span><div id="v-timer" class="timer-val">--:--</div><button class="btn-terminal" onclick="manualSync('v')">[ SYNC_OPEN ]</button></div>
                 </div>
             </div>
@@ -148,7 +192,11 @@
     let inventory = [];
     let isSyncing = false;
 
-    // --- SYNC PULL ---
+    function addLog(msg) {
+        const log = document.getElementById('terminal-log');
+        log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] ${msg}</div>` + log.innerHTML;
+    }
+
     function syncWithCloud() {
         if(isSyncing) return;
         const code = document.getElementById('squad-code').value;
@@ -172,7 +220,6 @@
         document.body.appendChild(s);
     }
 
-    // --- SYNC PUSH ---
     function pushState() {
         const code = document.getElementById('squad-code').value;
         if(!code) return;
@@ -194,21 +241,21 @@
         renderInventory();
     }
 
-    // --- OPS ---
-    function checkMissionStatus() {
-        const required = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
-        const currentNames = inventory.map(i => i.name);
-        const hasAll = required.every(r => currentNames.includes(r));
-        document.getElementById('mission-banner').style.display = hasAll ? 'block' : 'none';
-    }
-
     function collectItem(id, name, sec) {
         const user = document.getElementById('username').value || "Op";
         localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
         inventory.push({ uid: Date.now() + Math.random(), id, name, loc: 'Personal', owner: user });
-        const log = document.getElementById('terminal-log');
-        log.innerHTML = `<div>[${new Date().toLocaleTimeString()}] COLLECTED: ${name}</div>` + log.innerHTML;
+        addLog(`COLLECTED: ${name}`);
         pushState();
+    }
+
+    function adjustTimer(id) {
+        let m = prompt("Minutes remaining:");
+        if(m && !isNaN(m)) { 
+            localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); 
+            addLog(`ADJUST: ${id.toUpperCase()} -> ${m}M`);
+            pushState(); 
+        }
     }
 
     function moveItem(uid) {
@@ -228,12 +275,14 @@
             items.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'inv-item';
-                div.style.borderColor = getLocColor(loc);
+                div.style.borderLeftColor = getLocColor(loc);
                 div.innerHTML = `<div>${item.name}<br><small style="color:#555">BY: ${item.owner}</small></div><div style="display:flex; gap:3px;"><button class="btn-mini" onclick="moveItem(${item.uid})">MOVE</button><button class="btn-mini" style="color:var(--error-red)" onclick="dropItem(${item.uid})">X</button></div>`;
                 container.appendChild(div);
             });
         });
-        checkMissionStatus();
+        const required = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
+        const currentNames = inventory.map(i => i.name);
+        document.getElementById('mission-banner').style.display = required.every(r => currentNames.includes(r)) ? 'block' : 'none';
     }
 
     function getLocColor(loc) {
