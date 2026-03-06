@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Global Squad Sync</title>
+    <title>SC Contested Zone: Precision Sync v9.1</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -81,7 +81,7 @@
     <div class="main-grid">
         <div class="ops-column">
             <div class="exec-hero">
-                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR (GLOBAL_SYNC)</span>
+                <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
                 <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
             </div>
@@ -150,10 +150,10 @@
 <script>
     const CONFIG = {
         URL: 'https://script.google.com/macros/s/AKfycbzSgPMRD7fC84DCKeL7a59maSOK8ZQKX2O30bU78xehierT0vOAKglXjMTaN4ha5ULGXA/exec',
-        // PURE 4.6.0 LIVE CONSTANTS (No Calibration Required)
+        // REFINED 4.6.0 LIVE SYNC
         H_CYC: 11100000, 
         GREEN: 3900000, 
-        REF: 1735686000000
+        REF: 1735686000000 + 1050000 // Added 17.5m drift correction
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
@@ -227,7 +227,6 @@
     function clearAllData() { if(confirm("WIPE SQUAD DATA?")) { inventory = []; localStorage.clear(); pushState(); location.reload(); } }
 
     function updateTimers() {
-        // --- GLOBAL HANGAR LOGIC ---
         const hE = ((Date.now() - CONFIG.REF) % CONFIG.H_CYC + CONFIG.H_CYC) % CONFIG.H_CYC;
         const isHO = hE < CONFIG.GREEN;
         const sH = Math.ceil((isHO ? CONFIG.GREEN - hE : CONFIG.H_CYC - hE) / 1000);
@@ -237,7 +236,6 @@
         document.getElementById('h-status').textContent = isHO ? "OPEN" : "CLOSED";
         document.getElementById('h-status').style.color = isHO ? 'var(--success-green)' : 'var(--error-red)';
 
-        // --- LOCAL COOLDOWNS ---
         IDS.forEach(id => {
             const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
             if(el) {
