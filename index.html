@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Precision Sync v9.7</title>
+    <title>SC Contested Zone: Force-Sync v9.8</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -157,15 +157,17 @@
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
     let isSyncing = false;
+    let pushLock = false; // Flag to prevent Pull from overwriting a fresh local change
 
     document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
 
     function syncWithCloud() {
-        if(isSyncing) return;
+        if(isSyncing || pushLock) return; // Ignore pull if we just pushed a change
         const code = document.getElementById('squad-code').value; if(!code) return;
         isSyncing = true;
         const cb = 'cb_' + Math.round(Date.now());
         window[cb] = (d) => {
+            if(pushLock) { isSyncing = false; return; } // Secondary check
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
             inventory = d.inventory || []; 
             renderInventory(); 
@@ -181,32 +183,29 @@
 
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
+        
+        pushLock = true; // Lock incoming syncs
         const body = { groupCode: code, inventory: inventory };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
         
         const f = document.createElement('form'); 
-        f.method = 'POST'; 
-        f.action = CONFIG.URL; 
-        f.target = 'h_ifr';
-        const i = document.createElement('input'); 
-        i.name = 'payload'; 
-        i.value = JSON.stringify(body);
+        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
         
         if(!document.getElementById('h_ifr')) { 
-            const ifr = document.createElement('iframe'); 
-            ifr.name = 'h_ifr'; 
-            ifr.id = 'h_ifr'; 
-            ifr.style.display = 'none'; 
-            document.body.appendChild(ifr); 
+            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); 
         }
         
         document.body.appendChild(f); 
         f.submit(); 
-        
-        // Ensure UI updates immediately
         renderInventory(); 
-        setTimeout(() => f.remove(), 1000);
+        
+        // Hold the lock for 3 seconds to allow cloud processing
+        setTimeout(() => { 
+            f.remove(); 
+            pushLock = false; 
+        }, 3000);
     }
 
     function collectItem(id, name, sec) {
@@ -217,9 +216,8 @@
     }
 
     function dropItem(uid) {
-        // High-priority immediate filtering
         inventory = inventory.filter(i => i.uid !== uid);
-        pushState(); // Forced immediate push to cloud
+        pushState();
     }
 
     function moveItem(uid) {
