@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v8.7</title>
+    <title>SC Contested Zone Timer & Inventory Tracker v1.0</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -17,6 +17,7 @@
         body { background: #000; color: #fff; margin: 0; font-family: 'Courier New', monospace; overflow-x: hidden; }
         .dashboard-container { padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
 
+        /* --- SYNC HEADER --- */
         .sync-header {
             background: #050505; border-bottom: 2px solid var(--terminal-orange);
             padding: 15px 30px; display: flex; flex-wrap: wrap; gap: 15px;
@@ -35,6 +36,7 @@
         }
         .briefing-panel b { color: var(--terminal-orange); text-transform: uppercase; }
 
+        /* --- MISSION STATUS BANNER --- */
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
             padding: 15px; margin-bottom: 20px; text-align: center; font-weight: bold;
@@ -42,11 +44,13 @@
         }
         @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 5px var(--success-green); } 50% { box-shadow: 0 0 20px var(--success-green); } }
 
+        /* --- LAYOUT --- */
         .main-grid { display: grid; grid-template-columns: 1fr 400px; gap: 30px; }
         .lz-group { margin-bottom: 30px; }
         .lz-header { background: #111; padding: 8px 15px; font-size: 12px; font-weight: 900; letter-spacing: 2px; border-left: 5px solid #444; margin-bottom: 10px; }
         .op-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
 
+        /* --- CARDS --- */
         .data-card { border: 1px solid var(--terminal-border); background: rgba(10,10,10,0.8); padding: 15px; }
         .exec-hero { border: 2px solid var(--terminal-orange); background: rgba(255,140,0,0.05); padding: 25px; text-align: center; margin-bottom: 30px; }
         .timer-val { font-size: 32px; font-weight: bold; margin: 5px 0; }
@@ -60,6 +64,7 @@
         .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 60px; font-family: monospace; }
         .btn-adj:hover { border-color: var(--terminal-orange); color: #fff; }
 
+        /* --- INVENTORY MENU --- */
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 15px; }
         .inv-loc-group { margin-bottom: 20px; border: 1px solid #1a1a1a; padding: 10px; background: rgba(255,255,255,0.02); }
         .loc-title { font-size: 11px; font-weight: 900; display: block; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 8px; }
@@ -85,15 +90,15 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.7_STABLE ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.8_READY ]</span>
     </div>
 
     <div class="briefing-panel">
         <b>[ OPERATIONAL_BRIEFING ]</b><br>
-        1. <b>Establish Squad Identity:</b> Every member must use the <b>exact same SQUAD_CODE</b> (Case Sensitive) to share data.<br>
-        2. <b>Identify Yourself:</b> Enter your <b>OPERATOR_NAME</b> so the squad knows who is carrying specific items.<br>
-        3. <b>Stay Synchronized:</b> Click <b>[ FETCH_CLOUD ]</b> when joining. The terminal auto-syncs every 30s.<br>
-        4. <b>Persistence:</b> Data is saved to the cloud instantly. Entering your Squad Code later will restore all items and active timers.
+        1. <b>SQUAD_CODE:</b> Shared Case-Sensitive key. Typing 4+ characters triggers <b>Auto-Sync</b>.<br>
+        2. <b>OP_NAME:</b> Required to identify who is carrying specific critical items.<br>
+        3. <b>SYNC:</b> Terminal auto-syncs every 30s. Manual fetch pushes/pulls current session data instantly.<br>
+        4. <b>STORAGE:</b> Data is cloud-persistent. Re-entering code restores all items and active board timers.
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
@@ -131,53 +136,25 @@
             <div class="lz-group">
                 <div class="lz-header" style="border-color: var(--terminal-orange)">LZ: CHECKMATE</div>
                 <div class="op-grid">
-                    <div class="data-card">
-                        <span class="op-label">BOARD_01 [RED]</span>
-                        <div id="b1-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div>
-                    </div>
-                    <div class="data-card">
-                        <span class="op-label">BOARD_02 [BLUE]</span>
-                        <div id="b2-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div>
-                    </div>
-                    <div class="data-card">
-                        <span class="op-label">BOARD_03 [BLUE]</span>
-                        <div id="b3-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div>
-                    </div>
+                    <div class="data-card"><span class="op-label">B_01 [RED]</span><div id="b1-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b1', 'BOARD_01', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b1')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_02 [BLUE]</span><div id="b2-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b2', 'BOARD_02', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b2')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_03 [BLUE]</span><div id="b3-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b3', 'BOARD_03', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b3')">ADJ</button></div></div>
                 </div>
             </div>
 
             <div class="lz-group">
                 <div class="lz-header" style="border-color: var(--intel-blue)">LZ: ORBITUARY</div>
                 <div class="op-grid">
-                    <div class="data-card">
-                        <span class="op-label">BOARD_04 [RED]</span>
-                        <div id="b4-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div>
-                    </div>
-                    <div class="data-card">
-                        <span class="op-label">BOARD_07 [R+B2]</span>
-                        <div id="b7-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div>
-                    </div>
+                    <div class="data-card"><span class="op-label">B_04 [RED]</span><div id="b4-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b4', 'BOARD_04', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b4')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_07 [R+B2]</span><div id="b7-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b7', 'BOARD_07', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b7')">ADJ</button></div></div>
                 </div>
             </div>
 
             <div class="lz-group">
                 <div class="lz-header" style="border-color: #fff">LZ: RUIN_STATION</div>
                 <div class="op-grid">
-                    <div class="data-card">
-                        <span class="op-label">BOARD_05 [CRYPT]</span>
-                        <div id="b5-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div>
-                    </div>
-                    <div class="data-card">
-                        <span class="op-label">BOARD_06 [UNSEC]</span>
-                        <div id="b6-timer" class="timer-val">READY</div>
-                        <div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div>
-                    </div>
+                    <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
+                    <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1200)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
                     <div class="data-card" id="vault-card"><span class="op-label">VAULT_DOOR</span><div id="v-timer" class="timer-val">--:--</div><button class="btn-terminal" onclick="manualSync('v')">[ SYNC_OPEN ]</button></div>
                 </div>
             </div>
@@ -185,7 +162,7 @@
 
         <div class="side-column">
             <div class="inventory-manifest">
-                <span class="op-label">SQUAD_INVENTORY</span>
+                <span class="op-label">SQUAD_STORAGE</span>
                 <div id="inv-Checkmate" class="inv-loc-group"><span class="loc-title">CHECKMATE</span></div>
                 <div id="inv-Orbit" class="inv-loc-group"><span class="loc-title">ORBITUARY</span></div>
                 <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
@@ -206,6 +183,11 @@
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     let inventory = [];
     let isSyncing = false;
+
+    // --- AUTO-FETCH TRIGGER ---
+    document.getElementById('squad-code').addEventListener('input', function(e) {
+        if (e.target.value.length >= 4) syncWithCloud();
+    });
 
     function addLog(msg) {
         const log = document.getElementById('terminal-log');
