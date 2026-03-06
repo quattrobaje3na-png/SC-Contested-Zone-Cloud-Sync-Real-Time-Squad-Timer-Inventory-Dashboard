@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squad Ops Terminal v8.6</title>
+    <title>Squad Ops Terminal v8.7</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -23,6 +23,17 @@
             align-items: center; position: sticky; top: 0; z-index: 100; margin-bottom: 20px;
         }
         .header-input { background: #000; border: 1px solid #444; color: var(--terminal-orange); padding: 8px; font-size: 12px; outline: none; }
+
+        /* --- INSTRUCTION PANEL --- */
+        .briefing-panel {
+            background: rgba(255, 140, 0, 0.05);
+            border-left: 4px solid var(--terminal-orange);
+            padding: 15px;
+            margin-bottom: 25px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        .briefing-panel b { color: var(--terminal-orange); text-transform: uppercase; }
 
         #mission-banner {
             display: none; background: rgba(0, 255, 0, 0.1); border: 2px solid var(--success-green);
@@ -46,12 +57,7 @@
             padding: 10px; cursor: pointer; text-transform: uppercase; font-size: 10px; width: 100%; font-weight: 900;
         }
         .btn-terminal:hover { background: rgba(255,140,0,0.1); color: #fff; }
-
-        /* ADJUSTMENT BUTTON */
-        .btn-adj { 
-            background: #111; border: 1px solid #444; color: #666; 
-            padding: 10px; cursor: pointer; font-size: 10px; width: 60px; font-family: monospace;
-        }
+        .btn-adj { background: #111; border: 1px solid #444; color: #666; padding: 10px; cursor: pointer; font-size: 10px; width: 60px; font-family: monospace; }
         .btn-adj:hover { border-color: var(--terminal-orange); color: #fff; }
 
         .inventory-manifest { background: #0a0a0a; border: 2px solid #222; padding: 15px; }
@@ -79,7 +85,15 @@
         <input type="text" id="squad-code" class="header-input" placeholder="SQUAD_CODE">
         <input type="text" id="username" class="header-input" placeholder="OP_NAME">
         <button class="btn-terminal" style="width:auto; padding: 0 20px;" onclick="syncWithCloud()">[ FETCH_CLOUD ]</button>
-        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.6_ADJ_READY ]</span>
+        <span id="sync-status" style="font-size:10px; color:#444; margin-left:auto;">[ v8.7_STABLE ]</span>
+    </div>
+
+    <div class="briefing-panel">
+        <b>[ OPERATIONAL_BRIEFING ]</b><br>
+        1. <b>Establish Squad Identity:</b> Every member must use the <b>exact same SQUAD_CODE</b> (Case Sensitive) to share data.<br>
+        2. <b>Identify Yourself:</b> Enter your <b>OPERATOR_NAME</b> so the squad knows who is carrying specific items.<br>
+        3. <b>Stay Synchronized:</b> Click <b>[ FETCH_CLOUD ]</b> when joining. The terminal auto-syncs every 30s.<br>
+        4. <b>Persistence:</b> Data is saved to the cloud instantly. Entering your Squad Code later will restore all items and active timers.
     </div>
 
     <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL GEAR SECURED ]</div>
@@ -178,6 +192,7 @@
                 <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">OPERATOR_INV</span></div>
             </div>
             <div id="terminal-log" class="status-log"></div>
+            <button class="btn-terminal" style="margin-top:10px;" onclick="copyManifest()">[ COPY_SESSION_SNAPSHOT ]</button>
             <button class="btn-terminal" style="margin-top:10px; border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
         </div>
     </div>
@@ -290,6 +305,20 @@
         if(loc === 'Orbit') return '#0088ff';
         if(loc === 'Personal') return '#00FF00';
         return '#444';
+    }
+
+    function copyManifest() {
+        const code = document.getElementById('squad-code').value;
+        let text = `[ SQUAD_MANIFEST: ${code} ]\n\n`;
+        ['Personal', 'Checkmate', 'Orbit', 'Ruin'].forEach(loc => {
+            const items = inventory.filter(i => i.loc === loc);
+            if(items.length > 0) {
+                text += `${loc.toUpperCase()}:\n`;
+                items.forEach(i => text += ` - ${i.name} (Held by: ${i.owner})\n`);
+                text += `\n`;
+            }
+        });
+        navigator.clipboard.writeText(text).then(() => alert("Snapshot copied to clipboard."));
     }
 
     function dropItem(uid) { inventory = inventory.filter(i => i.uid !== uid); pushState(); }
