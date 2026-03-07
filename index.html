@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Global Sync v10.4</title>
+    <title>SC Contested Zone: Global Sync v10.5</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -132,6 +132,11 @@
                 <div class="op-grid">
                     <div class="data-card"><span class="op-label">B_05 [CRYPT]</span><div id="b5-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b5', 'BOARD_05', 1800)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b5')">ADJ</button></div></div>
                     <div class="data-card"><span class="op-label">B_06 [UNSEC]</span><div id="b6-timer" class="timer-val">READY</div><div style="display:flex; gap:5px;"><button class="btn-terminal" onclick="collectItem('b6', 'BOARD_06', 1800)">[ COLLECT ]</button><button class="btn-adj" onclick="adjustTimer('b6')">ADJ</button></div></div>
+                    <div class="data-card" id="vault-card">
+                        <span class="op-label">RUIN_VAULT_DOOR</span>
+                        <div id="v-timer" class="timer-val">--:--</div>
+                        <button class="btn-terminal" onclick="manualSync('v')">[ SYNC_OPEN ]</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -154,7 +159,9 @@
         URL: 'https://script.google.com/macros/s/AKfycbxJWc1Uq-9nDizcd-TYrniQ10VUcVqj4H7lHL5cjnuwOse7KSCe-jBDO0ojThvK_6t0YQ/exec',
         OPEN_WINDOW_SEC: 3900,
         CYCLE_LENGTH_SEC: 11100,
-        DRIFT_CORRECTION_SEC: 13 
+        DRIFT_CORRECTION_SEC: 13,
+        V_CYC: 1200000, // 20 min cycle
+        V_OPEN: 60000   // 1 min open
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     
@@ -177,13 +184,12 @@
                 localStorage.setItem('cz-version', currentVersion);
                 inventory = d.inventory || []; 
                 IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
+                if(d.vaultRef) localStorage.setItem('cz-v-sync', d.vaultRef);
                 renderInventory(); 
             }
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
-            isSyncing = false; 
-            delete window[cb]; 
-            const s = document.getElementById('scr_'+cb); if(s) s.remove();
+            isSyncing = false; delete window[cb]; const s = document.getElementById('scr_'+cb); if(s) s.remove();
         };
         const s = document.createElement('script'); s.id = 'scr_'+cb; s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}`;
         document.body.appendChild(s);
@@ -192,17 +198,13 @@
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
         pushLock = true; 
-        const body = { groupCode: code, inventory: inventory, version: currentVersion };
+        const body = { groupCode: code, inventory: inventory, version: currentVersion, vaultRef: localStorage.getItem('cz-v-sync') };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
-        const f = document.createElement('form'); 
-        f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
+        const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
-        if(!document.getElementById('h_ifr')) { 
-            const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); 
-        }
-        document.body.appendChild(f); 
-        f.submit(); 
+        if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
+        document.body.appendChild(f); f.submit(); 
         renderInventory(); 
         setTimeout(() => { f.remove(); pushLock = false; }, 4000);
     }
@@ -243,6 +245,11 @@
         }
     }
 
+    function manualSync(t) {
+        if(t==='v') localStorage.setItem('cz-v-sync', Date.now());
+        pushState();
+    }
+
     function adjustTimer(id) {
         let m = prompt("Minutes remaining:");
         if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
@@ -274,14 +281,27 @@
 
     function updateTimers() {
         const nowMs = Date.now();
+        
+        // --- Hangar Timer ---
         const cyclePosition = (Math.floor(nowMs / 1000) + CONFIG.DRIFT_CORRECTION_SEC) % CONFIG.CYCLE_LENGTH_SEC;
         const isHangarOpen = cyclePosition < CONFIG.OPEN_WINDOW_SEC;
-        const secondsRemaining = isHangarOpen ? (CONFIG.OPEN_WINDOW_SEC - cyclePosition) : (CONFIG.CYCLE_LENGTH_SEC - cyclePosition);
-        document.getElementById('h-timer').textContent = `${String(Math.floor(secondsRemaining / 60)).padStart(2, '0')}:${String(secondsRemaining % 60).padStart(2, '0')}`;
+        const hRem = isHangarOpen ? (CONFIG.OPEN_WINDOW_SEC - cyclePosition) : (CONFIG.CYCLE_LENGTH_SEC - cyclePosition);
+        document.getElementById('h-timer').textContent = `${String(Math.floor(hRem / 60)).padStart(2, '0')}:${String(hRem % 60).padStart(2, '0')}`;
         document.getElementById('h-timer').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
         document.getElementById('h-status').textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
         document.getElementById('h-status').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
 
+        // --- Vault Timer ---
+        const vS = parseInt(localStorage.getItem('cz-v-sync'));
+        if(vS) {
+            const elapsed = (nowMs - vS) % CONFIG.V_CYC;
+            const isVO = elapsed < CONFIG.V_OPEN;
+            const vRem = Math.ceil((isVO ? CONFIG.V_OPEN - elapsed : CONFIG.V_CYC - elapsed) / 1000);
+            document.getElementById('v-timer').textContent = `${String(Math.floor(vRem/60)).padStart(2,'0')}:${String(vRem%60).padStart(2,'0')}`;
+            document.getElementById('v-timer').style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
+        }
+
+        // --- Cooldown Timers ---
         IDS.forEach(id => {
             const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
             if(el) {
