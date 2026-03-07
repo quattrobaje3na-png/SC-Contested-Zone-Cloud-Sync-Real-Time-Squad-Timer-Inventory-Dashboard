@@ -22,14 +22,7 @@ Google Sheets for persistent state management.
 
 AJAX/JSONP for cross-origin data fetching.
 
-## BASIC_SETUP_INSTRUCTIONS
-1: Launch the tool and enter a a selected unique alphanumeric code in the SQUAD_CODE field. Ensure your entire team uses the exact same code.
-
-2: Enter your handle in the OP_NAME field. This ensures when you move an item, the inventory correctly displays your name next to the asset.
-
-Use the CALIBRATE or ADJ button on the timers when you aquire a item, find a used card/board printer. All squad members will see the countdown adjust immediately.
-
-Player Instructions: Hosting Your Private Squad Database
+## HOSTING_YOUR_OWN_DATABASE_INSTRUCTIONS
 To use your own private sheet for squad tracking, follow these steps to set up the backend database.
 
 1. Create Your Google Sheet
@@ -37,38 +30,38 @@ Open Google Sheets and create a new blank spreadsheet.
 
 Name it something like "Squad_Ops_DB".
 
-You do not need to format the columns; the script will handle data entries automatically in Sheet1.
+Ensure your first sheet is named Sheet1.
 
-2. Install the Squad Script
-Go to the top menu and select Extensions > Apps Script.
+2. Get the Latest Sync Script
+Go to the repository file: google sheets script.txt (or your specific path).
 
-Delete any code in the editor window and paste the "Squad Backend Script" provided below.
+Click the "Raw" button at the top right of the file view to see the plain text code.
 
-Click the Save (disk icon) and name the project "Squad_Sync_Engine".
+Press Ctrl+A then Ctrl+C to copy the entire script.
 
-3. Deploy as a Web App
-Click the blue Deploy button at the top right and select New deployment.
+3. Install & Deploy
+In your Google Sheet, go to Extensions > Apps Script.
 
-Select type: Web app.
+Delete any existing code and paste the script you copied.
 
-Description: Squad Sync v10.
+Click Save and name it "Squad_Sync_Engine".
 
-Execute as: Me (Your email).
+Click Deploy > New deployment.
 
-Who has access: Anyone (This is crucial so your squadmates' browsers can send data to the sheet).
+Select Web app.
 
-Click Deploy. You will be asked to Authorize Access—click through the prompts (select your account, click "Advanced," and "Go to Squad_Sync_Engine (unsafe)") to allow the script to write to your sheet.
+Set Execute as: "Me" and Who has access: "Anyone".
 
-4. Link to the Tool
-Once deployed, Google will give you a Web App URL (it ends in /exec). Copy this URL.
+Note: This must be "Anyone" so your squadmates can send data to your sheet.
 
-Open the Squad Operations Terminal tool.
+Click Deploy and authorize the permissions (Click "Advanced" > "Go to Squad_Sync_Engine (unsafe)" if prompted).
 
-Scroll to the bottom to [ DATABASE_CONFIGURATION ].
+4. Link to the Terminal
+Copy the Web App URL provided by Google (ends in /exec).
 
-Paste your URL into the box and click [ OVERRIDE_DATABASE ].
+Open the Squad Operations Terminal, scroll to the bottom, and paste your URL into the PRIVATE_GOOGLE_SCRIPT_URL box.
 
-Your squad is now running on its own private Google Sheet!
+Click [ OVERRIDE_DATABASE ].
 
 ## LEGAL_DISCLAIMER
 Star Citizen®, Roberts Space Industries®, and Cloud Imperium Games® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.
