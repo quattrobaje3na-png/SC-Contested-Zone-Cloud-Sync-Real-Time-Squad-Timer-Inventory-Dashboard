@@ -25,44 +25,50 @@ AJAX/JSONP for cross-origin data fetching.
 ## HOSTING_YOUR_OWN_DATABASE_INSTRUCTIONS
 To use your own private sheet for squad tracking, follow these steps to set up the backend database.
 
-1. Create Your Google Sheet
-Open Google Sheets and create a new blank spreadsheet.
+OPERATIONAL INSTRUCTIONS: PRIVATE DATABASE SETUP
+Follow these steps to host your own private squad tracking manifest using Google Sheets.
 
-Name it something like "Squad_Ops_DB".
+1. CREATE YOUR GOOGLE SHEET
+OPEN Google Sheets and create a new blank spreadsheet.
 
-Ensure your first sheet is named Sheet1.
+NAME the file something recognizable, such as "Squad_Ops_DB".
 
-2. Get the Latest Sync Script
-Go to the repository file: google sheets script.txt (or your specific path).
+CONFIRM that the tab at the bottom is named Sheet1.
 
-Click the "Raw" button at the top right of the file view to see the plain text code.
+2. GET THE LATEST SYNC SCRIPT
+NAVIGATE to the repository file: google sheets script.txt.
 
-Press Ctrl+A then Ctrl+C to copy the entire script.
+SELECT the "Raw" button at the top right of the file window to view the plain text.
 
-3. Install & Deploy
-In your Google Sheet, go to Extensions > Apps Script.
+COPY the entire script by pressing Ctrl+A then Ctrl+C.
 
-Delete any existing code and paste the script you copied.
+3. INSTALL & DEPLOY
+ACCESS the script editor in your Google Sheet via Extensions > Apps Script.
 
-Click Save and name it "Squad_Sync_Engine".
+WIPE any existing placeholder code and PASTE the script you copied from the repository.
 
-Click Deploy > New deployment.
+SAVE the project and name it "Squad_Sync_Engine".
 
-Select Web app.
+INITIATE deployment by clicking Deploy > New deployment.
 
-Set Execute as: "Me" and Who has access: "Anyone".
+CONFIGURE the following settings:
 
-Note: This must be "Anyone" so your squadmates can send data to your sheet.
+TYPE: Web app.
 
-Click Deploy and authorize the permissions (Click "Advanced" > "Go to Squad_Sync_Engine (unsafe)" if prompted).
+EXECUTE AS: Me.
 
-4. Link to the Terminal
-Copy the Web App URL provided by Google (ends in /exec).
+WHO HAS ACCESS: Anyone. (Required for squad synchronization).
 
-Open the Squad Operations Terminal, scroll to the bottom, and paste your URL into the PRIVATE_GOOGLE_SCRIPT_URL box.
+AUTHORIZE the deployment. If a warning appears, click "Advanced" and then "Go to Squad_Sync_Engine (unsafe)" to finish.
 
-Click [ OVERRIDE_DATABASE ].
+4. LINK TO THE TERMINAL
+COPY the Web App URL provided in the deployment window (this URL ends in /exec).
 
+OPEN your Squad Operations Terminal and scroll to the bottom.
+
+PASTE your unique URL into the PRIVATE_GOOGLE_SCRIPT_URL field.
+
+SELECT [ OVERRIDE_DATABASE ] to finalize the link.
 ## LEGAL_DISCLAIMER
 Star Citizen®, Roberts Space Industries®, and Cloud Imperium Games® are registered trademarks of Cloud Imperium Rights LLC. All rights reserved.
 
