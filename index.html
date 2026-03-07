@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Real-Time Sync v10.9</title>
+    <title>SC Contested Zone: Real-Time Sync v11.0</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -86,7 +86,7 @@
         <button class="btn-terminal" style="width:auto; padding: 0 15px;" onclick="syncWithCloud()">[ SYNC ]</button>
     </div>
 
-    <div id="mission-banner">[ MISSION_READY: 1x FULL SET DETECTED ]</div>
+    <div id="mission-banner">[ MISSION_READY: FULL SET DETECTED ]</div>
 
     <div class="main-grid">
         <div class="ops-column">
@@ -94,7 +94,7 @@
                 <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
                 <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
-                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="smartTurnIn()">[ TURN_IN_ALL_KEYS ]</button>
+                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="personalTurnIn()">[ TURN_IN_ALL_KEYS ]</button>
             </div>
 
             <div class="lz-group">
@@ -161,11 +161,9 @@
 
             <div class="help-block">
                 <b>COMM_CHANNEL_HELP:</b><br><br>
-                1. Enter a <b>SQUAD_CODE</b> to link with team.<br>
-                2. Set <b>USER_NAME</b> to identify yourself.<br>
-                3. Click <b>COLLECT</b> to start a 30m cooldown.<br>
-                4. Hit <b>TURN_IN_ALL_KEYS</b> to remove exactly 1 full set of items (keeps overflow).<br>
-                5. Auto-sync is active every 15s.
+                1. <b>SQUAD_CODE</b> links team.<br>
+                2. <b>TURN_IN_ALL_KEYS</b> only clears items in <b>OPERATOR_INV</b>. Items in LZ stashes are safe.<br>
+                3. Move gear to Personal inventory before turning in.
             </div>
         </div>
     </div>
@@ -177,20 +175,17 @@
             <button class="btn-terminal" style="width:auto; padding: 0 15px; border-color:#555; color:#888;" onclick="saveCustomDB()">[ OVERRIDE_DATABASE ]</button>
             <button class="btn-terminal" style="width:auto; padding: 0 15px; border-color:#555; color:#888;" onclick="resetDB()">[ RESTORE_DEFAULT ]</button>
         </div>
-        <p style="font-size:9px; color:#444; margin-top:10px;">NOTE: Overriding allows squads to host their own private Google Sheet manifest. Leave blank to use the public global database.</p>
     </div>
 </div>
 
 <script>
     const DEFAULT_URL = 'https://script.google.com/macros/s/AKfycbxJWc1Uq-9nDizcd-TYrniQ10VUcVqj4H7lHL5cjnuwOse7KSCe-jBDO0ojThvK_6t0YQ/exec';
-    
     const CONFIG = {
         URL: localStorage.getItem('cz-custom-url') || DEFAULT_URL,
         OPEN_WINDOW_SEC: 3900,
         CYCLE_LENGTH_SEC: 11100,
         DRIFT_CORRECTION_SEC: 13,
-        V_CYC: 1200000, 
-        V_OPEN: 60000   
+        V_CYC: 1200000, V_OPEN: 60000   
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     const REQUIRED_SET = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
@@ -200,25 +195,13 @@
     let isSyncing = false;
     let pushLock = false; 
 
-    // DB CONFIG FUNCTIONS
     function saveCustomDB() {
         const val = document.getElementById('custom-url').value;
-        if(val && val.includes('script.google.com')) {
-            localStorage.setItem('cz-custom-url', val);
-            alert("Database Override Successful. Reloading...");
-            location.reload();
-        } else {
-            alert("Invalid Script URL.");
-        }
+        if(val && val.includes('script.google.com')) { localStorage.setItem('cz-custom-url', val); location.reload(); }
     }
-    function resetDB() {
-        localStorage.removeItem('cz-custom-url');
-        alert("Restored Default Database. Reloading...");
-        location.reload();
-    }
+    function resetDB() { localStorage.removeItem('cz-custom-url'); location.reload(); }
     document.getElementById('custom-url').value = localStorage.getItem('cz-custom-url') || "";
 
-    // SQUAD CODE TRIGGER
     document.getElementById('squad-code').addEventListener('input', (e) => { if (e.target.value.length >= 4) syncWithCloud(); });
 
     function syncWithCloud() {
@@ -227,7 +210,6 @@
         isSyncing = true;
         const bust = Date.now();
         const cb = 'cb_' + Math.round(bust);
-        
         window[cb] = (d) => {
             if(pushLock) { isSyncing = false; return; }
             const cloudVersion = d.version || 0;
@@ -243,9 +225,7 @@
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
             isSyncing = false; delete window[cb]; const s = document.getElementById('scr_'+cb); if(s) s.remove();
         };
-
-        const s = document.createElement('script'); 
-        s.id = 'scr_'+cb; 
+        const s = document.createElement('script'); s.id = 'scr_'+cb; 
         s.src = `${CONFIG.URL}?groupCode=${code}&prefix=${cb}&t=${bust}`;
         document.body.appendChild(s);
     }
@@ -255,43 +235,34 @@
         pushLock = true; 
         const body = { groupCode: code, inventory: inventory, version: currentVersion, vaultRef: localStorage.getItem('cz-v-sync') };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
-        
         const f = document.createElement('form'); f.method = 'POST'; f.action = CONFIG.URL; f.target = 'h_ifr';
         const i = document.createElement('input'); i.name = 'payload'; i.value = JSON.stringify(body);
         f.appendChild(i);
-        
         if(!document.getElementById('h_ifr')) { const ifr = document.createElement('iframe'); ifr.name = 'h_ifr'; ifr.id = 'h_ifr'; ifr.style.display = 'none'; document.body.appendChild(ifr); }
         document.body.appendChild(f); f.submit(); 
         renderInventory(); 
         setTimeout(() => { f.remove(); pushLock = false; }, 4000);
     }
 
-    // --- UPDATED: SMART TURN-IN (Reduces count by 1 instead of wipe) ---
-    function smartTurnIn() {
-        const currentNames = inventory.map(i => i.name);
-        const hasFullSet = REQUIRED_SET.every(r => currentNames.includes(r));
-        
-        if(!hasFullSet) {
-            alert("INCOMPLETE SET: Squad manifest is missing items required for turn-in.");
+    // --- UPDATED: PERSONAL TURN-IN (Wipes ONLY items in Personal list) ---
+    function personalTurnIn() {
+        const personalItems = inventory.filter(i => i.loc === 'Personal');
+        if (personalItems.length === 0) {
+            alert("NO ITEMS IN PERSONAL INVENTORY: Items must be moved to OPERATOR_INV before turning in.");
             return;
         }
 
-        if(!confirm("CONFIRM TURN-IN: This will remove exactly 1 of every required item from the manifest. Overflow will remain.")) return;
+        if(!confirm(`CONFIRM TURN-IN: This will clear all ${personalItems.length} items currently in Personal inventories. Stashed items in LZs will remain.`)) return;
         
-        // Remove only the FIRST instance found of each required item
-        REQUIRED_SET.forEach(itemName => {
-            const index = inventory.findIndex(item => item.name === itemName);
-            if (index !== -1) {
-                inventory.splice(index, 1);
-            }
-        });
+        // Filter out any item that is currently in 'Personal'
+        inventory = inventory.filter(i => i.loc !== 'Personal');
 
         currentVersion++;
         localStorage.setItem('cz-version', currentVersion);
         pushState();
         
         const btn = document.getElementById('turn-in-btn');
-        btn.textContent = "[ SET_CONSUMED ]";
+        btn.textContent = "[ PERSONAL_GEAR_WIPED ]";
         setTimeout(() => { btn.textContent = "[ TURN_IN_ALL_KEYS ]"; }, 3000);
     }
 
@@ -342,15 +313,6 @@
         const hasFullSet = REQUIRED_SET.every(r => currentNames.includes(r));
         const banner = document.getElementById('mission-banner');
         banner.style.display = hasFullSet ? 'block' : 'none';
-        if (hasFullSet) {
-             // Calculate how many full sets we have
-             let minCount = 999;
-             REQUIRED_SET.forEach(name => {
-                 let count = inventory.filter(i => i.name === name).length;
-                 if(count < minCount) minCount = count;
-             });
-             banner.textContent = `[ MISSION_READY: ${minCount}x FULL SET DETECTED ]`;
-        }
     }
 
     function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
