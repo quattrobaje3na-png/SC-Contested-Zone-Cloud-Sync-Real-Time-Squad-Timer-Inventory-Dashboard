@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Real-Time Sync v10.8</title>
+    <title>SC Contested Zone: Real-Time Sync v10.9</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -86,7 +86,7 @@
         <button class="btn-terminal" style="width:auto; padding: 0 15px;" onclick="syncWithCloud()">[ SYNC ]</button>
     </div>
 
-    <div id="mission-banner">[ MISSION_COMPLETE: ALL CRITICAL KEYS SECURED ]</div>
+    <div id="mission-banner">[ MISSION_READY: 1x FULL SET DETECTED ]</div>
 
     <div class="main-grid">
         <div class="ops-column">
@@ -94,7 +94,7 @@
                 <span class="op-label">PRIMARY: EXECUTIVE_HANGAR</span>
                 <div id="h-timer" style="font-size:64px; font-weight:900;">--:--</div>
                 <div id="h-status" style="font-size:12px; margin-top:5px; text-transform:uppercase; letter-spacing:2px;">DETECTING...</div>
-                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="turnInAll()">[ TURN_IN_ALL_KEYS ]</button>
+                <button id="turn-in-btn" class="btn-terminal btn-turnin" onclick="smartTurnIn()">[ TURN_IN_ALL_KEYS ]</button>
             </div>
 
             <div class="lz-group">
@@ -164,7 +164,7 @@
                 1. Enter a <b>SQUAD_CODE</b> to link with team.<br>
                 2. Set <b>USER_NAME</b> to identify yourself.<br>
                 3. Click <b>COLLECT</b> to start a 30m cooldown.<br>
-                4. Hit <b>TURN_IN_ALL_KEYS</b> to clear squad manifest outside of individually deleting them<br>
+                4. Hit <b>TURN_IN_ALL_KEYS</b> to remove exactly 1 full set of items (keeps overflow).<br>
                 5. Auto-sync is active every 15s.
             </div>
         </div>
@@ -193,6 +193,7 @@
         V_OPEN: 60000   
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
+    const REQUIRED_SET = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
     
     let inventory = [];
     let currentVersion = parseInt(localStorage.getItem('cz-version') || 0);
@@ -265,15 +266,33 @@
         setTimeout(() => { f.remove(); pushLock = false; }, 4000);
     }
 
-    function turnInAll() {
-        if(!confirm("CONFIRM TURN-IN: Clear squad manifest?")) return;
+    // --- UPDATED: SMART TURN-IN (Reduces count by 1 instead of wipe) ---
+    function smartTurnIn() {
+        const currentNames = inventory.map(i => i.name);
+        const hasFullSet = REQUIRED_SET.every(r => currentNames.includes(r));
+        
+        if(!hasFullSet) {
+            alert("INCOMPLETE SET: Squad manifest is missing items required for turn-in.");
+            return;
+        }
+
+        if(!confirm("CONFIRM TURN-IN: This will remove exactly 1 of every required item from the manifest. Overflow will remain.")) return;
+        
+        // Remove only the FIRST instance found of each required item
+        REQUIRED_SET.forEach(itemName => {
+            const index = inventory.findIndex(item => item.name === itemName);
+            if (index !== -1) {
+                inventory.splice(index, 1);
+            }
+        });
+
         currentVersion++;
         localStorage.setItem('cz-version', currentVersion);
-        inventory = [];
         pushState();
+        
         const btn = document.getElementById('turn-in-btn');
-        btn.textContent = "[ TURNED_IN_COMPLETE ]";
-        setTimeout(() => { btn.textContent = "[ TURN_IN_ALL_GEAR ]"; }, 3000);
+        btn.textContent = "[ SET_CONSUMED ]";
+        setTimeout(() => { btn.textContent = "[ TURN_IN_ALL_KEYS ]"; }, 3000);
     }
 
     function collectItem(id, name, sec) {
@@ -319,9 +338,19 @@
                 container.appendChild(div);
             });
         });
-        const required = ['KEY_3-4', 'KEY_3-5', 'BOARD_01', 'BOARD_02', 'BOARD_03', 'BOARD_04', 'BOARD_05', 'BOARD_06', 'BOARD_07'];
         const currentNames = inventory.map(i => i.name);
-        document.getElementById('mission-banner').style.display = required.every(r => currentNames.includes(r)) ? 'block' : 'none';
+        const hasFullSet = REQUIRED_SET.every(r => currentNames.includes(r));
+        const banner = document.getElementById('mission-banner');
+        banner.style.display = hasFullSet ? 'block' : 'none';
+        if (hasFullSet) {
+             // Calculate how many full sets we have
+             let minCount = 999;
+             REQUIRED_SET.forEach(name => {
+                 let count = inventory.filter(i => i.name === name).length;
+                 if(count < minCount) minCount = count;
+             });
+             banner.textContent = `[ MISSION_READY: ${minCount}x FULL SET DETECTED ]`;
+        }
     }
 
     function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
