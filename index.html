@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Real-Time Sync v11.0</title>
+    <title>SC Contested Zone: Real-Time Sync v11.1</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -70,7 +70,6 @@
         /* --- CONFIG BLOCKS --- */
         .help-block { margin-top: 20px; border: 1px solid #222; padding: 12px; font-size: 11px; color: #666; line-height: 1.5; }
         .db-config-block { margin-top: 40px; padding: 20px; border-top: 1px solid #222; background: #050505; }
-        .db-config-block b { color: var(--terminal-orange); font-size: 10px; display: block; margin-bottom: 10px; }
 
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; flex-shrink: 0; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
@@ -162,14 +161,13 @@
             <div class="help-block">
                 <b>COMM_CHANNEL_HELP:</b><br><br>
                 1. <b>SQUAD_CODE</b> links team.<br>
-                2. <b>TURN_IN_ALL_KEYS</b> only clears items in <b>OPERATOR_INV</b>. Items in LZ stashes are safe.<br>
-                3. Move gear to Personal inventory before turning in.
+                2. <b>TURN_IN_ALL_KEYS</b> clears only items in <b>OPERATOR_INV</b>.<br>
+                3. Clicking <b>MOVE</b> updates the item holder's name to you.
             </div>
         </div>
     </div>
 
     <div class="db-config-block">
-        <b>[ DATABASE_CONFIGURATION ]</b>
         <div style="display:flex; gap:10px; align-items:center;">
             <input type="text" id="custom-url" class="header-input" style="flex:2" placeholder="PRIVATE_GOOGLE_SCRIPT_URL">
             <button class="btn-terminal" style="width:auto; padding: 0 15px; border-color:#555; color:#888;" onclick="saveCustomDB()">[ OVERRIDE_DATABASE ]</button>
@@ -244,26 +242,14 @@
         setTimeout(() => { f.remove(); pushLock = false; }, 4000);
     }
 
-    // --- UPDATED: PERSONAL TURN-IN (Wipes ONLY items in Personal list) ---
     function personalTurnIn() {
         const personalItems = inventory.filter(i => i.loc === 'Personal');
-        if (personalItems.length === 0) {
-            alert("NO ITEMS IN PERSONAL INVENTORY: Items must be moved to OPERATOR_INV before turning in.");
-            return;
-        }
-
-        if(!confirm(`CONFIRM TURN-IN: This will clear all ${personalItems.length} items currently in Personal inventories. Stashed items in LZs will remain.`)) return;
-        
-        // Filter out any item that is currently in 'Personal'
+        if (personalItems.length === 0) { alert("PERSONAL_INV EMPTY"); return; }
+        if(!confirm(`CLEAR ALL ${personalItems.length} ITEMS FROM PERSONAL?`)) return;
         inventory = inventory.filter(i => i.loc !== 'Personal');
-
         currentVersion++;
         localStorage.setItem('cz-version', currentVersion);
         pushState();
-        
-        const btn = document.getElementById('turn-in-btn');
-        btn.textContent = "[ PERSONAL_GEAR_WIPED ]";
-        setTimeout(() => { btn.textContent = "[ TURN_IN_ALL_KEYS ]"; }, 3000);
     }
 
     function collectItem(id, name, sec) {
@@ -282,12 +268,21 @@
         pushState();
     }
 
+    // --- UPDATED: MOVE Captures current User Name ---
     function moveItem(uid) {
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
+        const currentUser = document.getElementById('username').value || "Op";
+        
         if(valid.includes(target)) { 
             const item = inventory.find(i => i.uid === uid); 
-            if(item) { currentVersion++; localStorage.setItem('cz-version', currentVersion); item.loc = target; pushState(); } 
+            if(item) { 
+                currentVersion++; 
+                localStorage.setItem('cz-version', currentVersion); 
+                item.loc = target; 
+                item.owner = currentUser; // Updates owner to person hitting MOVE
+                pushState(); 
+            } 
         }
     }
 
