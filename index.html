@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Global Sync v10.5</title>
+    <title>SC Contested Zone: Global Sync v10.6</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -63,6 +63,13 @@
         .inv-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #111; margin-top: 5px; border-left: 4px solid #444; font-size: 12px; }
         .btn-mini { background: #222; border: 1px solid #444; color: #888; font-size: 10px; padding: 6px; cursor: pointer; }
         
+        /* --- HELP BLOCK --- */
+        .help-block { 
+            margin-top: 20px; border: 1px solid #222; padding: 12px; 
+            font-size: 11px; color: #666; line-height: 1.5; 
+        }
+        .help-block b { color: var(--terminal-orange); }
+
         .conn-lamp { width: 12px; height: 12px; border-radius: 50%; background: #222; flex-shrink: 0; }
         .lamp-ok { background: var(--success-green); box-shadow: 0 0 10px var(--success-green); }
     </style>
@@ -149,7 +156,15 @@
                 <div id="inv-Ruin" class="inv-loc-group"><span class="loc-title">RUIN_STATION</span></div>
                 <div id="inv-Personal" class="inv-loc-group"><span class="loc-title">OPERATOR_INV</span></div>
             </div>
-            <button class="btn-terminal" style="margin-top:15px; border-color:var(--error-red); color:var(--error-red);" onclick="clearAllData()">[ EMERGENCY_WIPE ]</button>
+
+            <div class="help-block">
+                <b>COMM_CHANNEL_HELP:</b><br><br>
+                1. Enter a <b>SQUAD_CODE</b> (4+ chars) to link with team. Use same code to resume later.<br>
+                2. Set <b>OP_NAME</b> so others know who is holding gear.<br>
+                3. Click <b>COLLECT</b> to start a cooldown and add item to inventory.<br>
+                4. Use <b>MOVE</b> to transfer items to LZ stashes.<br>
+                5. Hit <b>TURN_IN_ALL</b> at the Executive Hangar terminal to wipe manifest for next run.
+            </div>
         </div>
     </div>
 </div>
@@ -160,8 +175,8 @@
         OPEN_WINDOW_SEC: 3900,
         CYCLE_LENGTH_SEC: 11100,
         DRIFT_CORRECTION_SEC: 13,
-        V_CYC: 1200000, // 20 min cycle
-        V_OPEN: 60000   // 1 min open
+        V_CYC: 1200000, 
+        V_OPEN: 60000   
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
     
@@ -273,16 +288,8 @@
 
     function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
     
-    function clearAllData() { 
-        if(confirm("EMERGENCY WIPE: Clear all data?")) { 
-            currentVersion = 0; inventory = []; localStorage.clear(); pushState(); location.reload(); 
-        } 
-    }
-
     function updateTimers() {
         const nowMs = Date.now();
-        
-        // --- Hangar Timer ---
         const cyclePosition = (Math.floor(nowMs / 1000) + CONFIG.DRIFT_CORRECTION_SEC) % CONFIG.CYCLE_LENGTH_SEC;
         const isHangarOpen = cyclePosition < CONFIG.OPEN_WINDOW_SEC;
         const hRem = isHangarOpen ? (CONFIG.OPEN_WINDOW_SEC - cyclePosition) : (CONFIG.CYCLE_LENGTH_SEC - cyclePosition);
@@ -291,7 +298,6 @@
         document.getElementById('h-status').textContent = isHangarOpen ? "HANGAR_OPEN" : "HANGAR_CLOSED";
         document.getElementById('h-status').style.color = isHangarOpen ? 'var(--success-green)' : 'var(--error-red)';
 
-        // --- Vault Timer ---
         const vS = parseInt(localStorage.getItem('cz-v-sync'));
         if(vS) {
             const elapsed = (nowMs - vS) % CONFIG.V_CYC;
@@ -301,7 +307,6 @@
             document.getElementById('v-timer').style.color = isVO ? 'var(--success-green)' : 'var(--terminal-orange)';
         }
 
-        // --- Cooldown Timers ---
         IDS.forEach(id => {
             const exp = parseInt(localStorage.getItem(`cz-${id}-timer`)); const el = document.getElementById(`${id}-timer`);
             if(el) {
