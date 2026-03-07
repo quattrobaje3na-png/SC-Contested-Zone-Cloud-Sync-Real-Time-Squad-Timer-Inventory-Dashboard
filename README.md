@@ -1,5 +1,4 @@
-SC Contested Zone Squad Sync: Timer & Inventory
-Real-Time Tactical Synchronization for Star Citizen Squads
+SC Contested Zone Cloud Sync Real Time Squad Timer Inventory Dashboard is here to deliver Real-Time Tactical Synchronization for Star Citizen Squads.
 This is a high-performance, web-based tactical web app designed to synchronize Contested Zone timers and Shared Squad Inventory across multiple clients in real-time so everyone stays up to date. 
 
 ## OVERVIEW
