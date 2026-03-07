@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SC Contested Zone: Absolute Sync v10.0</title>
+    <title>SC Contested Zone: Nuclear Sync v10.1</title>
     <style>
         :root {
             --terminal-orange: #FF8C00;
@@ -159,7 +159,10 @@
         DRIFT_CORRECTION_SEC: 13 
     };
     const IDS = ['c1', 'c2', 'b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7'];
+    
+    // Nuclear Sync Variables
     let inventory = [];
+    let currentVersion = parseInt(localStorage.getItem('cz-version') || 0);
     let isSyncing = false;
     let pushLock = false; 
 
@@ -172,8 +175,20 @@
         const cb = 'cb_' + Math.round(Date.now());
         window[cb] = (d) => {
             if(pushLock) { isSyncing = false; return; }
+            
+            // Nuclear Check: If cloud version is older than local version, discard pull
+            const cloudVersion = d.version || 0;
+            if (cloudVersion < currentVersion) {
+                console.warn(`Nuclear Sync: Discarding old cloud data (v${cloudVersion}) in favor of local (v${currentVersion})`);
+                isSyncing = false;
+                return;
+            }
+
             IDS.forEach(id => { if(d[id]) localStorage.setItem(`cz-${id}-timer`, d[id]); });
             inventory = d.inventory || []; 
+            currentVersion = cloudVersion;
+            localStorage.setItem('cz-version', currentVersion);
+            
             renderInventory(); 
             document.getElementById('indicator').className = 'conn-lamp lamp-ok';
             setTimeout(() => document.getElementById('indicator').className = 'conn-lamp', 2000);
@@ -188,9 +203,12 @@
     function pushState() {
         const code = document.getElementById('squad-code').value; if(!code) return;
         
-        // Block incoming syncs temporarily to allow cloud to update
         pushLock = true; 
-        const body = { groupCode: code, inventory: inventory };
+        const body = { 
+            groupCode: code, 
+            inventory: inventory,
+            version: currentVersion // Include version in cloud update
+        };
         IDS.forEach(id => body[id] = localStorage.getItem(`cz-${id}-timer`) || 0);
         
         const f = document.createElement('form'); 
@@ -208,39 +226,42 @@
         f.submit(); 
         renderInventory(); 
         
-        // Unlock after 5 seconds
+        // Unlock after 5 seconds to ensure server side is processed
         setTimeout(() => { f.remove(); pushLock = false; }, 5000);
     }
 
     function turnInAll() {
         if(!confirm("CONFIRM TURN-IN: Clear squad manifest?")) return;
         
-        // 1. Force local wipe
+        // Nuclear Wipe
+        currentVersion++; // Increment version to override all cloud history
+        localStorage.setItem('cz-version', currentVersion);
         inventory = [];
+        
         renderInventory();
-        
-        // 2. Lock Sync and Push empty state
-        pushLock = true;
         pushState();
-        
-        // 3. Double-tap push after 1.5s to ensure cloud registers the wipe
-        setTimeout(() => { pushState(); }, 1500);
 
-        // Feedback
         const btn = document.getElementById('turn-in-btn');
-        const oldText = btn.textContent;
         btn.textContent = "[ TURNED_IN_COMPLETE ]";
-        setTimeout(() => { btn.textContent = oldText; }, 3000);
+        setTimeout(() => { btn.textContent = "[ TURN_IN_ALL_GEAR ]"; }, 3000);
     }
 
     function collectItem(id, name, sec) {
         const user = document.getElementById('username').value || "Op";
         localStorage.setItem(`cz-${id}-timer`, Date.now() + (sec * 1000));
+        
+        // Increment version on collection too
+        currentVersion++;
+        localStorage.setItem('cz-version', currentVersion);
+        
         inventory.push({ uid: Date.now() + Math.random(), id, name, loc: 'Personal', owner: user });
         pushState();
     }
 
     function dropItem(uid) {
+        currentVersion++; // Increment version on deletion
+        localStorage.setItem('cz-version', currentVersion);
+        
         inventory = inventory.filter(i => i.uid !== uid);
         pushState();
     }
@@ -248,12 +269,23 @@
     function moveItem(uid) {
         const target = prompt("Target: Checkmate, Orbit, Ruin, or Personal?");
         const valid = ['Checkmate', 'Orbit', 'Ruin', 'Personal'];
-        if(valid.includes(target)) { const item = inventory.find(i => i.uid === uid); if(item) { item.loc = target; pushState(); } }
+        if(valid.includes(target)) { 
+            const item = inventory.find(i => i.uid === uid); 
+            if(item) { 
+                currentVersion++;
+                localStorage.setItem('cz-version', currentVersion);
+                item.loc = target; 
+                pushState(); 
+            } 
+        }
     }
 
     function adjustTimer(id) {
         let m = prompt("Minutes remaining:");
-        if(m && !isNaN(m)) { localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); pushState(); }
+        if(m && !isNaN(m)) { 
+            localStorage.setItem(`cz-${id}-timer`, Date.now() + (parseInt(m)*60000)); 
+            pushState(); 
+        }
     }
 
     function renderInventory() {
@@ -275,7 +307,8 @@
     function getLocColor(loc) { if(loc === 'Checkmate') return '#FF8C00'; if(loc === 'Orbit') return '#0088ff'; if(loc === 'Personal') return '#00FF00'; return '#444'; }
     
     function clearAllData() { 
-        if(confirm("EMERGENCY WIPE: Clear all cloud and local data?")) { 
+        if(confirm("EMERGENCY WIPE: Clear all data?")) { 
+            currentVersion = 0;
             inventory = []; localStorage.clear(); pushState(); location.reload(); 
         } 
     }
